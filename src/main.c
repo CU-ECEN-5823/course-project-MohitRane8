@@ -1,6 +1,4 @@
-#include <stdbool.h>
-#include "native_gecko.h"
-#include "log.h"
+#include "main.h"
 
 extern void gecko_main_init();
 bool mesh_bgapi_listener(struct gecko_cmd_packet *evt);
@@ -13,6 +11,10 @@ int main(void)
   gecko_main_init();
 
   logInit();
+
+  displayInit();
+
+  gpioInit();
 
   /* Infinite loop */
   while (1) {

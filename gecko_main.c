@@ -39,6 +39,18 @@
 /* Device initialization header */
 #include "hal-config.h"
 
+/* Display header */
+#include "src/display.h"
+
+/* GPIO header */
+#include "src/gpio.h"
+
+/* Log header */
+#include "src/log.h"
+
+/* Hardware soft timer handles */
+#define DISPLAY_UPDATE 0x01
+
 #if defined(HAL_CONFIG)
 #include "bsphalconfig.h"
 #else
@@ -201,7 +213,34 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     case gecko_evt_system_boot_id:
       // Initialize Mesh stack in Node operation mode, wait for initialized event
       gecko_cmd_mesh_node_init();
+      // Set hardware soft timer for 1 second for display update
+      gecko_cmd_hardware_set_soft_timer(1 * 32768, DISPLAY_UPDATE, 0);
+      DISPLAY_PRINTF(DISPLAY_ROW_NAME, "ASSIGNMENT 10");
+      LOG_INFO("BOOT DONE");
       break;
+    case gecko_evt_hardware_soft_timer_id:
+    	switch (evt->data.evt_hardware_soft_timer.handle) {
+			case DISPLAY_UPDATE:
+				// Prevent charge buildup on LCD
+				displayUpdate();
+				break;
+    	}
+    	break;
+	case gecko_evt_system_external_signal_id:
+		// PB0 button press
+		if (((evt->data.evt_system_external_signal.extsignals) & PB0_FLAG) != 0) {
+			if(GPIO_PinInGet(PB0_PORT, PB0_PIN) == 0)
+			{
+				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
+				LOG_INFO("Button Pressed");
+			}
+			else
+			{
+				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
+				LOG_INFO("Button Released");
+			}
+		}
+		break;
     case gecko_evt_mesh_node_initialized_id:
       if (!evt->data.evt_mesh_node_initialized.provisioned) {
         // The Node is now initialized, start unprovisioned Beaconing using PB-ADV and PB-GATT Bearers
