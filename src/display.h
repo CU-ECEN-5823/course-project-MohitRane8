@@ -32,10 +32,6 @@
 
 #define ECEN5823_INCLUDE_DISPLAY_SUPPORT 1
 
-/* Header files required for display */
-#define SCHEDULER_SUPPORTS_DISPLAY_UPDATE_EVENT 1
-#define TIMER_SUPPORTS_1HZ_TIMER_EVENT	1
-
 #if ECEN5823_INCLUDE_DISPLAY_SUPPORT
 #define DISPLAY_PRINTF(lcd_row, msg, ...)	displayPrintf(lcd_row, msg, ##__VA_ARGS__)
 #else
@@ -43,6 +39,7 @@
 #endif
 
 #include "glib.h"
+#include "main.h"
 
 /**
  * Display row definitions, used for writing specific content based on assignment requirements.

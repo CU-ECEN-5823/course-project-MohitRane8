@@ -22,7 +22,12 @@
 #define PB0_PORT gpioPortF
 #define PB0_PIN 6
 
+/* Push Button PB0 connected to pin PF7 */
+#define PB1_PORT gpioPortF
+#define PB1_PIN 7
+
 void gpioInit();
+void gpioIntEnable();
 void gpioLed0SetOn();
 void gpioLed0SetOff();
 void gpioLed1SetOn();

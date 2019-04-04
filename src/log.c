@@ -16,8 +16,8 @@
  */
 uint32_t loggerGetTimestamp(void)
 {
-	//return timerGetRunTimeMilliseconds();
-	return 0;
+	uint32_t value = msecCount;
+	return value;
 }
 
 /**
@@ -32,6 +32,10 @@ void logInit(void)
 	 * RETARGET_SerialCrLf() ensures each linefeed also includes carriage return.  Without it, the first character is shifted in TeraTerm
 	 */
 	RETARGET_SerialCrLf(true);
+
+	// Set hardware soft timer for 10 millisecond for display update
+	gecko_cmd_hardware_set_soft_timer(328, LOG_TIME_UPDATE, 0);
+
 	LOG_INFO("Initialized Logging");
 }
 
