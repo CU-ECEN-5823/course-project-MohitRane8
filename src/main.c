@@ -1,3 +1,5 @@
+/* Assignment 10: Bluetooth Mesh Pub Sub */
+
 #include "main.h"
 
 extern void gecko_main_init();
