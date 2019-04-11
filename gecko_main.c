@@ -171,12 +171,6 @@ static errorcode_t onoff_update(uint16_t element_index)
 {
   struct mesh_generic_state current, target;
 
-//  current.kind = mesh_generic_state_on_off;
-//  current.on_off.on = lightbulb_state.onoff_current;
-//
-//  target.kind = mesh_generic_state_on_off;
-//  target.on_off.on = lightbulb_state.onoff_target;
-
   return mesh_lib_generic_server_update(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
                                         element_index,
                                         &current,
@@ -257,7 +251,7 @@ static void onoff_request(uint16_t model_id,
 	else if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
 
-	onoff_update_and_publish(element_index);
+//	onoff_update_and_publish(element_index);
 }
 
 /**
@@ -366,14 +360,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		} else {
 
 			struct gecko_msg_system_get_bt_address_rsp_t *pAddr = gecko_cmd_system_get_bt_address();
-
 			set_device_name(&pAddr->address);
-
-//			#if DEVICE_IS_ONOFF_PUBLISHER
-//					DISPLAY_PRINTF(DISPLAY_ROW_NAME, "PUBLISHER");
-//			#else
-//					DISPLAY_PRINTF(DISPLAY_ROW_NAME, "SUBSCRIBER");
-//			#endif
 
 			// Initialize Mesh stack in Node operation mode, wait for initialized event
 			gecko_cmd_mesh_node_init();
@@ -412,13 +399,13 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			req.kind = mesh_generic_request_on_off;
 
 			if(GPIO_PinInGet(PB0_PORT, PB0_PIN) == 0) {
-				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
+//				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
 				LOG_INFO("Button Pressed");
 
 				req.on_off = MESH_GENERIC_ON_OFF_STATE_ON;
 			}
 			else {
-				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
+//				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
 				LOG_INFO("Button Released");
 
 				req.on_off = MESH_GENERIC_ON_OFF_STATE_OFF;
@@ -446,10 +433,8 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			#if DEVICE_IS_ONOFF_PUBLISHER
 						mesh_lib_init(malloc,free,8);
 			#else
-//						static uint16_t _primary_elem_index = 0;
 						mesh_lib_init(malloc,free,9);
 						init_models();
-						onoff_update_and_publish(0);
 			#endif
 
 			#if DEVICE_USES_BLE_MESH_CLIENT_MODEL
@@ -458,8 +443,6 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			#else
 						gecko_cmd_mesh_generic_server_init();
 			#endif
-
-			gpioIntEnable();
 		}
 		else {
 			DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "UNPROVISIONED");
@@ -476,8 +459,6 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		break;
 
 	case gecko_evt_mesh_node_provisioned_id:
-//          _elem_index = 0;   // index of primary element is zero. This example has only one element.
-//          switch_node_init();
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PROVISIONED");
 		LOG_INFO("node is provisioned. address:%x, ivi:%ld", pData->address, pData->ivi);
 
@@ -543,10 +524,10 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	mesh_lib_generic_server_event_handler(evt);
     	break;
 
-    case gecko_evt_mesh_generic_server_state_changed_id:
-    	LOG_INFO("evt_mesh_generic_server_state_changed_id");
-    	mesh_lib_generic_server_event_handler(evt);
-    	break;
+//    case gecko_evt_mesh_generic_server_state_changed_id:
+//    	LOG_INFO("evt_mesh_generic_server_state_changed_id");
+//    	mesh_lib_generic_server_event_handler(evt);
+//    	break;
 #endif
 
     default:
