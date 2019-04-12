@@ -169,10 +169,15 @@ void set_device_name(bd_addr *pAddr)
 
 static void init_models(void)
 {
-  mesh_lib_generic_server_register_handler(MESH_GENERIC_PRESS_RELEASE_SERVER_MODEL_ID,
+  mesh_lib_generic_server_register_handler(MESH_GENERIC_PB0_PRESS_RELEASE_SERVER_MODEL_ID,
                                            0,
-                                           pressrelease_request,
-                                           pressrelease_change);
+                                           pb0_pressrelease_request,
+                                           pb0_pressrelease_change);
+
+  mesh_lib_generic_server_register_handler(MESH_GENERIC_PB1_PRESS_RELEASE_SERVER_MODEL_ID,
+                                           0,
+                                           pb1_pressrelease_request,
+                                           pb1_pressrelease_change);
 }
 
 /***************************************************************************//**
@@ -235,13 +240,22 @@ static void init_models(void)
 //	LOG_INFO("State Changed");
 //}
 
-static void pressrelease_change(uint16_t model_id,
+static void pb0_pressrelease_change(uint16_t model_id,
                          uint16_t element_index,
                          const struct mesh_generic_state *current,
                          const struct mesh_generic_state *target,
                          uint32_t remaining_ms)
 {
-	LOG_INFO("State Changed");
+	LOG_INFO("PB0 State Changed");
+}
+
+static void pb1_pressrelease_change(uint16_t model_id,
+                         uint16_t element_index,
+                         const struct mesh_generic_state *current,
+                         const struct mesh_generic_state *target,
+                         uint32_t remaining_ms)
+{
+	LOG_INFO("PB1 State Changed");
 }
 
 //// this works for now because this function is not used anyways, it may not work if it is actually used
@@ -286,7 +300,7 @@ static void pressrelease_change(uint16_t model_id,
 //}
 
 // all parameters in request function are required even if they are not used or it won't work
-static void pressrelease_request(uint16_t model_id,
+static void pb0_pressrelease_request(uint16_t model_id,
                           uint16_t element_index,
                           uint16_t client_addr,
                           uint16_t server_addr,
@@ -296,17 +310,26 @@ static void pressrelease_request(uint16_t model_id,
                           uint16_t delay_ms,
                           uint8_t request_flags)
 {
-//	if(request->on_off == MESH_GENERIC_ON_OFF_STATE_OFF)
-//		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
-//	else if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
-//		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
+	if(request->pb0_press_release == MESH_GENERIC_PB0_PRESS_RELEASE_STATE_RELEASE)
+		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB0 Released");
+	else if(request->pb0_press_release == MESH_GENERIC_PB0_PRESS_RELEASE_STATE_PRESS)
+		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB0 Pressed");
+}
 
-	if(request->press_release == MESH_GENERIC_PRESS_RELEASE_STATE_RELEASE)
-		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
-	else if(request->press_release == MESH_GENERIC_PRESS_RELEASE_STATE_PRESS)
-		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
-
-//	onoff_update_and_publish(element_index);
+static void pb1_pressrelease_request(uint16_t model_id,
+                          uint16_t element_index,
+                          uint16_t client_addr,
+                          uint16_t server_addr,
+                          uint16_t appkey_index,
+                          const struct mesh_generic_request *request,
+                          uint32_t transition_ms,
+                          uint16_t delay_ms,
+                          uint8_t request_flags)
+{
+	if(request->pb1_press_release == MESH_GENERIC_PB1_PRESS_RELEASE_STATE_RELEASE)
+		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Released");
+	else if(request->pb1_press_release == MESH_GENERIC_PB1_PRESS_RELEASE_STATE_PRESS)
+		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Pressed");
 }
 
 /**
@@ -452,25 +475,47 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			uint16 resp;
 
 //			req.kind = mesh_generic_request_on_off;
-			req.kind = mesh_generic_request_press_release;
+			req.kind = mesh_generic_request_pb0_press_release;
 
 			if(GPIO_PinInGet(PB0_PORT, PB0_PIN) == 0) {
 //				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
-				LOG_INFO("Button Pressed");
+				LOG_INFO("PB0 Pressed");
 
 //				req.on_off = MESH_GENERIC_ON_OFF_STATE_ON;
-				req.press_release = MESH_GENERIC_PRESS_RELEASE_STATE_PRESS;
+				req.pb0_press_release = MESH_GENERIC_PB0_PRESS_RELEASE_STATE_PRESS;
 			}
 			else {
 //				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
-				LOG_INFO("Button Released");
+				LOG_INFO("PB0 Released");
 
 //				req.on_off = MESH_GENERIC_ON_OFF_STATE_OFF;
-				req.press_release = MESH_GENERIC_PRESS_RELEASE_STATE_RELEASE;
+				req.pb0_press_release = MESH_GENERIC_PB0_PRESS_RELEASE_STATE_RELEASE;
 			}
 			trid++;
 //			resp = mesh_lib_generic_client_publish(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
-			resp = mesh_lib_generic_client_publish(MESH_GENERIC_PRESS_RELEASE_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+			resp = mesh_lib_generic_client_publish(MESH_GENERIC_PB0_PRESS_RELEASE_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+
+			if (resp) {
+				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
+			} else {
+				LOG_INFO("request sent, trid = %u", trid);
+			}
+		}
+
+		else if(((evt->data.evt_system_external_signal.extsignals) & PB1_FLAG) != 0) {
+			struct mesh_generic_request req;
+			uint16 resp;
+			req.kind = mesh_generic_request_pb1_press_release;
+			if(GPIO_PinInGet(PB1_PORT, PB1_PIN) == 0) {
+				LOG_INFO("PB1 Pressed");
+				req.pb1_press_release = MESH_GENERIC_PB1_PRESS_RELEASE_STATE_PRESS;
+			}
+			else {
+				LOG_INFO("PB1 Released");
+				req.pb1_press_release = MESH_GENERIC_PB1_PRESS_RELEASE_STATE_RELEASE;
+			}
+			trid++;
+			resp = mesh_lib_generic_client_publish(MESH_GENERIC_PB1_PRESS_RELEASE_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 
 			if (resp) {
 				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);

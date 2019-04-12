@@ -48,9 +48,25 @@ void GPIO_EVEN_IRQHandler(void)
 	/* Clearing all interrupts */
 	GPIO_IntClear(reason);
 
-	// if interrupt came from PB0, send gecko external signal 0x01 for button press
+	// if interrupt came from PB0, send gecko external signal 0x10 for button press
+	// pin 6, so 7th bit set (0x40)
 	if(reason & 0x40)
 		gecko_external_signal(PB0_FLAG);
+	CORE_EXIT_CRITICAL();
+}
+
+void GPIO_ODD_IRQHandler(void)
+{
+	CORE_ENTER_CRITICAL();
+	uint32_t reason = GPIO_IntGet();
+
+	/* Clearing all interrupts */
+	GPIO_IntClear(reason);
+
+	// if interrupt came from PB1, send gecko external signal 0x11 for button press
+	// pin 7, so 8th bit set (0x80)
+	if(reason & 0x80)
+		gecko_external_signal(PB1_FLAG);
 	CORE_EXIT_CRITICAL();
 }
 

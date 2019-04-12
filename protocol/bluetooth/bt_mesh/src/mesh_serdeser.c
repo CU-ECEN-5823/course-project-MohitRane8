@@ -1108,11 +1108,19 @@ int mesh_lib_serialize_request(const struct mesh_generic_request *req,
   size_t msg_off = 0;
 
   switch (req->kind) {
-    case mesh_generic_request_press_release:
+    case mesh_generic_request_pb0_press_release:
       if (msg_len < 1) {
         return -1;
       }
-      msg_buf[msg_off++] = req->press_release;
+      msg_buf[msg_off++] = req->pb0_press_release;
+      *msg_used = msg_off;
+      break;
+
+    case mesh_generic_request_pb1_press_release:
+      if (msg_len < 1) {
+        return -1;
+      }
+      msg_buf[msg_off++] = req->pb1_press_release;
       *msg_used = msg_off;
       break;
   }
@@ -1128,12 +1136,20 @@ int mesh_lib_deserialize_request(struct mesh_generic_request *req,
   size_t msg_off = 0;
 
   switch (kind) {
-    case mesh_generic_request_press_release:
+    case mesh_generic_request_pb0_press_release:
       if (msg_len - msg_off != 1) {
         return -1;
       }
       req->kind = kind;
-      req->press_release = msg_buf[msg_off];
+      req->pb0_press_release = msg_buf[msg_off];
+      break;
+
+    case mesh_generic_request_pb1_press_release:
+      if (msg_len - msg_off != 1) {
+        return -1;
+      }
+      req->kind = kind;
+      req->pb1_press_release = msg_buf[msg_off];
       break;
   }
 
@@ -1149,11 +1165,19 @@ int mesh_lib_serialize_state(const struct mesh_generic_state *current,
   size_t msg_off = 0;
 
   switch (current->kind) {
-  case mesh_generic_state_press_release:
+  	  case mesh_generic_state_pb0_press_release:
         if (msg_len < 1) {
           return -1;
         }
-        msg_buf[msg_off++] = current->press_release;
+        msg_buf[msg_off++] = current->pb0_press_release;
+        *msg_used = msg_off;
+        break;
+
+  	  case mesh_generic_state_pb1_press_release:
+        if (msg_len < 1) {
+          return -1;
+        }
+        msg_buf[msg_off++] = current->pb1_press_release;
         *msg_used = msg_off;
         break;
   }
@@ -1171,10 +1195,20 @@ int mesh_lib_deserialize_state(struct mesh_generic_state *current,
   size_t msg_off = 0;
 
   switch (kind) {
-  case mesh_generic_state_press_release:
+  	  case mesh_generic_state_pb0_press_release:
         if (msg_len - msg_off == 1) {
           current->kind = kind;
-          current->press_release = msg_buf[msg_off++];
+          current->pb0_press_release = msg_buf[msg_off++];
+          *has_target = 0;
+        } else {
+          return -1;
+        }
+        break;
+
+  	  case mesh_generic_state_pb1_press_release:
+        if (msg_len - msg_off == 1) {
+          current->kind = kind;
+          current->pb1_press_release = msg_buf[msg_off++];
           *has_target = 0;
         } else {
           return -1;

@@ -34,6 +34,7 @@ void gpioLed1SetOn();
 void gpioLed1SetOff();
 
 void GPIO_EVEN_IRQHandler(void);
+void GPIO_ODD_IRQHandler(void);
 
 /* Functions required for display */
 void gpioEnableDisplay();
