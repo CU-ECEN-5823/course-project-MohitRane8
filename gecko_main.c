@@ -151,12 +151,28 @@ void set_device_name(bd_addr *pAddr)
  * Initialization of the models supported by this node.
  * This function registers callbacks for each of the supported models.
  ******************************************************************************/
+//static void init_models(void)
+//{
+//  mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
+//                                           0,
+//                                           onoff_request,
+//                                           onoff_change);
+//}
+
+//static void init_models(void)
+//{
+//  mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
+//                                           0,
+//                                           pressrelease_request,
+//                                           pressrelease_change);
+//}
+
 static void init_models(void)
 {
-  mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
+  mesh_lib_generic_server_register_handler(MESH_GENERIC_PRESS_RELEASE_SERVER_MODEL_ID,
                                            0,
-                                           onoff_request,
-                                           onoff_change);
+                                           pressrelease_request,
+                                           pressrelease_change);
 }
 
 /***************************************************************************//**
@@ -167,16 +183,16 @@ static void init_models(void)
  * @return Status of the update operation.
  *         Returns bg_err_success (0) if succeed, non-zero otherwise.
  ******************************************************************************/
-static errorcode_t onoff_update(uint16_t element_index)
-{
-  struct mesh_generic_state current, target;
-
-  return mesh_lib_generic_server_update(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-                                        element_index,
-                                        &current,
-                                        &target,
-                                        0);
-}
+//static errorcode_t onoff_update(uint16_t element_index)
+//{
+//  struct mesh_generic_state current, target;
+//
+//  return mesh_lib_generic_server_update(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
+//                                        element_index,
+//                                        &current,
+//                                        &target,
+//                                        0);
+//}
 
 /***************************************************************************//**
  * Update generic on/off state and publish model state to the network.
@@ -186,19 +202,19 @@ static errorcode_t onoff_update(uint16_t element_index)
  * @return Status of the update and publish operation.
  *         Returns bg_err_success (0) if succeed, non-zero otherwise.
  ******************************************************************************/
-static errorcode_t onoff_update_and_publish(uint16_t element_index)
-{
-  errorcode_t e;
-
-  e = onoff_update(element_index);
-  if (e == bg_err_success) {
-    e = mesh_lib_generic_server_publish(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-                                        element_index,
-                                        mesh_generic_state_on_off);
-  }
-
-  return e;
-}
+//static errorcode_t onoff_update_and_publish(uint16_t element_index)
+//{
+//  errorcode_t e;
+//
+//  e = onoff_update(element_index);
+//  if (e == bg_err_success) {
+//    e = mesh_lib_generic_server_publish(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
+//                                        element_index,
+//                                        mesh_generic_state_on_off);
+//  }
+//
+//  return e;
+//}
 
 /***************************************************************************//**
  * This function is a handler for generic on/off change event.
@@ -210,7 +226,16 @@ static errorcode_t onoff_update_and_publish(uint16_t element_index)
  * @param[in] remaining_ms   Time (in milliseconds) remaining before transition
  *                           from current state to target state is complete.
  ******************************************************************************/
-static void onoff_change(uint16_t model_id,
+//static void onoff_change(uint16_t model_id,
+//                         uint16_t element_index,
+//                         const struct mesh_generic_state *current,
+//                         const struct mesh_generic_state *target,
+//                         uint32_t remaining_ms)
+//{
+//	LOG_INFO("State Changed");
+//}
+
+static void pressrelease_change(uint16_t model_id,
                          uint16_t element_index,
                          const struct mesh_generic_state *current,
                          const struct mesh_generic_state *target,
@@ -218,6 +243,12 @@ static void onoff_change(uint16_t model_id,
 {
 	LOG_INFO("State Changed");
 }
+
+//// this works for now because this function is not used anyways, it may not work if it is actually used
+//static void onoff_change()
+//{
+//	LOG_INFO("State Changed");
+//}
 
 /***************************************************************************//**
  * This function process the requests for the generic on/off model.
@@ -236,7 +267,26 @@ static void onoff_change(uint16_t model_id,
  *                           - Bit 1: Response required. If nonzero client
  *                                    expects a response from the server.
  ******************************************************************************/
-static void onoff_request(uint16_t model_id,
+//static void onoff_request(uint16_t model_id,
+//                          uint16_t element_index,
+//                          uint16_t client_addr,
+//                          uint16_t server_addr,
+//                          uint16_t appkey_index,
+//                          const struct mesh_generic_request *request,
+//                          uint32_t transition_ms,
+//                          uint16_t delay_ms,
+//                          uint8_t request_flags)
+//{
+//	if(request->on_off == MESH_GENERIC_ON_OFF_STATE_OFF)
+//		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
+//	else if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
+//		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
+//
+////	onoff_update_and_publish(element_index);
+//}
+
+// all parameters in request function are required even if they are not used or it won't work
+static void pressrelease_request(uint16_t model_id,
                           uint16_t element_index,
                           uint16_t client_addr,
                           uint16_t server_addr,
@@ -246,9 +296,14 @@ static void onoff_request(uint16_t model_id,
                           uint16_t delay_ms,
                           uint8_t request_flags)
 {
-	if(request->on_off == MESH_GENERIC_ON_OFF_STATE_OFF)
+//	if(request->on_off == MESH_GENERIC_ON_OFF_STATE_OFF)
+//		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
+//	else if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
+//		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
+
+	if(request->press_release == MESH_GENERIC_PRESS_RELEASE_STATE_RELEASE)
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
-	else if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
+	else if(request->press_release == MESH_GENERIC_PRESS_RELEASE_STATE_PRESS)
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
 
 //	onoff_update_and_publish(element_index);
@@ -396,22 +451,26 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 			uint16 resp;
 
-			req.kind = mesh_generic_request_on_off;
+//			req.kind = mesh_generic_request_on_off;
+			req.kind = mesh_generic_request_press_release;
 
 			if(GPIO_PinInGet(PB0_PORT, PB0_PIN) == 0) {
 //				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
 				LOG_INFO("Button Pressed");
 
-				req.on_off = MESH_GENERIC_ON_OFF_STATE_ON;
+//				req.on_off = MESH_GENERIC_ON_OFF_STATE_ON;
+				req.press_release = MESH_GENERIC_PRESS_RELEASE_STATE_PRESS;
 			}
 			else {
 //				DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
 				LOG_INFO("Button Released");
 
-				req.on_off = MESH_GENERIC_ON_OFF_STATE_OFF;
+//				req.on_off = MESH_GENERIC_ON_OFF_STATE_OFF;
+				req.press_release = MESH_GENERIC_PRESS_RELEASE_STATE_RELEASE;
 			}
 			trid++;
-			resp = mesh_lib_generic_client_publish(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+//			resp = mesh_lib_generic_client_publish(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+			resp = mesh_lib_generic_client_publish(MESH_GENERIC_PRESS_RELEASE_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 
 			if (resp) {
 				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
