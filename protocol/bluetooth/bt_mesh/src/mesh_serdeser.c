@@ -1116,13 +1116,13 @@ int mesh_lib_serialize_request(const struct mesh_generic_request *req,
       *msg_used = msg_off;
       break;
 
-    case mesh_generic_request_pb1_press_release:
-      if (msg_len < 1) {
-        return -1;
-      }
-      msg_buf[msg_off++] = req->pb1_press_release;
-      *msg_used = msg_off;
-      break;
+//    case mesh_generic_request_pb1_press_release:
+//      if (msg_len < 1) {
+//        return -1;
+//      }
+//      msg_buf[msg_off++] = req->pb1_press_release;
+//      *msg_used = msg_off;
+//      break;
   }
 
   return 0;
@@ -1144,13 +1144,13 @@ int mesh_lib_deserialize_request(struct mesh_generic_request *req,
       req->pb0_press_release = msg_buf[msg_off];
       break;
 
-    case mesh_generic_request_pb1_press_release:
-      if (msg_len - msg_off != 1) {
-        return -1;
-      }
-      req->kind = kind;
-      req->pb1_press_release = msg_buf[msg_off];
-      break;
+//    case mesh_generic_request_pb1_press_release:
+//      if (msg_len - msg_off != 1) {
+//        return -1;
+//      }
+//      req->kind = kind;
+//      req->pb1_press_release = msg_buf[msg_off];
+//      break;
   }
 
     return 0;
@@ -1173,13 +1173,13 @@ int mesh_lib_serialize_state(const struct mesh_generic_state *current,
         *msg_used = msg_off;
         break;
 
-  	  case mesh_generic_state_pb1_press_release:
-        if (msg_len < 1) {
-          return -1;
-        }
-        msg_buf[msg_off++] = current->pb1_press_release;
-        *msg_used = msg_off;
-        break;
+//  	  case mesh_generic_state_pb1_press_release:
+//        if (msg_len < 1) {
+//          return -1;
+//        }
+//        msg_buf[msg_off++] = current->pb1_press_release;
+//        *msg_used = msg_off;
+//        break;
   }
 
   return 0;
@@ -1205,15 +1205,15 @@ int mesh_lib_deserialize_state(struct mesh_generic_state *current,
         }
         break;
 
-  	  case mesh_generic_state_pb1_press_release:
-        if (msg_len - msg_off == 1) {
-          current->kind = kind;
-          current->pb1_press_release = msg_buf[msg_off++];
-          *has_target = 0;
-        } else {
-          return -1;
-        }
-        break;
+//  	  case mesh_generic_state_pb1_press_release:
+//        if (msg_len - msg_off == 1) {
+//          current->kind = kind;
+//          current->pb1_press_release = msg_buf[msg_off++];
+//          *has_target = 0;
+//        } else {
+//          return -1;
+//        }
+//        break;
   }
 
   return 0;

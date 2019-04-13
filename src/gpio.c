@@ -28,6 +28,10 @@ void gpioInit()
 	/* PB0 passkey confirmation button configuration */
 	GPIO_PinModeSet(PB0_PORT, PB0_PIN, gpioModeInputPull, true);
 	GPIO_PinModeSet(PB1_PORT, PB1_PIN, gpioModeInputPull, true);
+
+	// sensor pin
+	GPIO_PinModeSet(gpioPortA, 3, gpioModeInputPull, true);
+//	GPIO_PinModeSet(gpioPortA, 2, gpioModeInputPullFilter, true);
 }
 
 void gpioIntEnable()
@@ -36,8 +40,12 @@ void gpioIntEnable()
 	GPIO_IntConfig(PB0_PORT, PB0_PIN, true, true, true);
 	GPIO_IntConfig(PB1_PORT, PB1_PIN, true, true, true);
 
+	// sensor pin
+//	GPIO_IntConfig(gpioPortA, 1, true, true, true);
+
 	/* Enabling GPIO in NVIC */
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
+	NVIC_EnableIRQ(GPIO_ODD_IRQn);
 }
 
 void GPIO_EVEN_IRQHandler(void)
@@ -67,6 +75,10 @@ void GPIO_ODD_IRQHandler(void)
 	// pin 7, so 8th bit set (0x80)
 	if(reason & 0x80)
 		gecko_external_signal(PB1_FLAG);
+
+	// for sensor pin
+//	else if(reason & )
+//		LOG_INFO("Sensor interrupt received");
 	CORE_EXIT_CRITICAL();
 }
 

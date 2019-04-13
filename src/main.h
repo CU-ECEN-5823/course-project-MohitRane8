@@ -34,17 +34,19 @@ uint32_t msecCount;
 
 /// For indexing elements of the node (this assignment requires only one element)
 static uint16 _elem_index = 0x00;
-/// transaction identifier
-static uint8 trid = 0;
+
+/// number of active Bluetooth connections
+static uint8 num_connections = 0;
 
 /* Hardware soft timer handles */
 #define TIMER_ID_FACTORY_RESET 0x01
 #define TIMER_ID_RESTART 0x02
 #define DISPLAY_UPDATE 0x11
 #define LOG_TIME_UPDATE 0x12
+#define TIMER_ID_FRIEND_FIND 0x13
 
-#define PB0_FLAG 0x10
-#define PB1_FLAG 0x11
+#define PB0_FLAG 0x01
+#define PB1_FLAG 0x02
 
 void set_device_name(bd_addr *pAddr);
 
