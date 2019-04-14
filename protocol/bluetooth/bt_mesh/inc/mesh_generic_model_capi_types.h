@@ -552,21 +552,21 @@
 ///** @} */
 
 //******************************* my code starts here*********************************//
-#define MESH_GENERIC_PB0_PRESS_RELEASE_SERVER_MODEL_ID       0x1000
-#define MESH_GENERIC_PB0_PRESS_RELEASE_CLIENT_MODEL_ID       0x1001
+//#define MESH_GENERIC_PB0_PRESS_RELEASE_SERVER_MODEL_ID       0x1000
+//#define MESH_GENERIC_PB0_PRESS_RELEASE_CLIENT_MODEL_ID       0x1001
 
-//#define MESH_GENERIC_PB1_PRESS_RELEASE_SERVER_MODEL_ID       0x1300
-//#define MESH_GENERIC_PB1_PRESS_RELEASE_CLIENT_MODEL_ID       0x1302
+#define MESH_GENERIC_PB1_PRESS_RELEASE_SERVER_MODEL_ID       0x1100
+#define MESH_GENERIC_PB1_PRESS_RELEASE_CLIENT_MODEL_ID       0x1102
 
 #define MESH_GENERIC_PB0_PRESS_RELEASE_STATE_RELEASE 0x00
 #define MESH_GENERIC_PB0_PRESS_RELEASE_STATE_PRESS 0x01
 
-//#define MESH_GENERIC_PB1_PRESS_RELEASE_STATE_RELEASE 0x00
-//#define MESH_GENERIC_PB1_PRESS_RELEASE_STATE_PRESS 0x01
+#define MESH_GENERIC_PB1_PRESS_RELEASE_STATE_RELEASE 0x00
+#define MESH_GENERIC_PB1_PRESS_RELEASE_STATE_PRESS 0x01
 
 typedef enum {
 	mesh_generic_state_pb0_press_release = 0x00,
-//	mesh_generic_state_pb1_press_release = 0x01
+	mesh_generic_state_pb1_press_release = 0x01
 } mesh_generic_state_t;
 
 struct mesh_generic_state {
@@ -579,13 +579,13 @@ struct mesh_generic_state {
 //	  } button;
 
     uint8_t pb0_press_release;
-//    uint8_t pb1_press_release;
+    uint8_t pb1_press_release;
   };
 };
 
 typedef enum {
 	mesh_generic_request_pb0_press_release = 0x00,
-//	mesh_generic_request_pb1_press_release = 0x01
+	mesh_generic_request_pb1_press_release = 0x01
 } mesh_generic_request_t;
 
 struct mesh_generic_request {
@@ -598,7 +598,7 @@ struct mesh_generic_request {
 //	  } button;
 
     uint8_t pb0_press_release;
-//    uint8_t pb1_press_release;
+    uint8_t pb1_press_release;
   };
 };
 
