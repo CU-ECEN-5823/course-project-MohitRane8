@@ -28,10 +28,6 @@ void gpioInit()
 	/* PB0 passkey confirmation button configuration */
 	GPIO_PinModeSet(PB0_PORT, PB0_PIN, gpioModeInputPull, true);
 	GPIO_PinModeSet(PB1_PORT, PB1_PIN, gpioModeInputPull, true);
-
-	// sensor pin
-	GPIO_PinModeSet(gpioPortA, 3, gpioModeInputPull, true);
-//	GPIO_PinModeSet(gpioPortA, 2, gpioModeInputPullFilter, true);
 }
 
 void gpioIntEnable()

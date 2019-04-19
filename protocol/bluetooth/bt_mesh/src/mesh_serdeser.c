@@ -1123,6 +1123,14 @@ int mesh_lib_serialize_request(const struct mesh_generic_request *req,
       msg_buf[msg_off++] = req->pb1_press_release;
       *msg_used = msg_off;
       break;
+
+//      if (msg_len < 2) {
+//        return -1;
+//      }
+//      uint16_to_buf(&msg_buf[msg_off], req->pb1_press_release);
+//      msg_off += 2;
+//      *msg_used = msg_off;
+//      break;
   }
 
   return 0;
@@ -1151,6 +1159,13 @@ int mesh_lib_deserialize_request(struct mesh_generic_request *req,
       req->kind = kind;
       req->pb1_press_release = msg_buf[msg_off];
       break;
+
+//      if (msg_len - msg_off != 2) {
+//        return -1;
+//      }
+//      req->kind = kind;
+//      req->pb1_press_release = uint16_from_buf(&msg_buf[msg_off]);
+//      break;
   }
 
     return 0;
@@ -1180,6 +1195,26 @@ int mesh_lib_serialize_state(const struct mesh_generic_state *current,
         msg_buf[msg_off++] = current->pb1_press_release;
         *msg_used = msg_off;
         break;
+
+//      if (msg_len < (target ? 4 : 2)) {
+//        return -1;
+//      }
+//      uint16_to_buf(&msg_buf[msg_off], current->lightness.level);
+//      msg_off += 2;
+//      if (target) {
+//        uint16_to_buf(&msg_buf[msg_off], target->lightness.level);
+//        msg_off += 2;
+//      }
+//      *msg_used = msg_off;
+//      break;
+
+//	  if (msg_len < 2) {
+//		return -1;
+//	  }
+//	  uint16_to_buf(&msg_buf[msg_off], current->pb1_press_release);
+//	  msg_off += 2;
+//	  *msg_used = msg_off;
+//	  break;
   }
 
   return 0;
@@ -1214,6 +1249,34 @@ int mesh_lib_deserialize_state(struct mesh_generic_state *current,
           return -1;
         }
         break;
+
+//      if (msg_len - msg_off == 2) {
+//        current->kind = kind;
+//        current->lightness.level = uint16_from_buf(&msg_buf[msg_off]);
+//        msg_off += 2;
+//        *has_target = 0;
+//      } else if (msg_len - msg_off == 4) {
+//        current->kind = kind;
+//        current->lightness.level = int16_from_buf(&msg_buf[msg_off]);
+//        msg_off += 2;
+//        target->kind = kind;
+//        target->lightness.level = int16_from_buf(&msg_buf[msg_off]);
+//        msg_off += 2;
+//        *has_target = 1;
+//      } else {
+//        return -1;
+//      }
+//      break;
+
+//		  if (msg_len - msg_off == 2) {
+//			current->kind = kind;
+//			current->pb1_press_release = uint16_from_buf(&msg_buf[msg_off]);
+//			msg_off += 2;
+//			*has_target = 0;
+//		  } else {
+//			return -1;
+//		  }
+//		  break;
   }
 
   return 0;
