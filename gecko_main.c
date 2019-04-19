@@ -174,10 +174,10 @@ static void init_models(void)
                                            pb0_pressrelease_request,
                                            pb0_pressrelease_change);
 
-//  mesh_lib_generic_server_register_handler(MESH_GENERIC_PB1_PRESS_RELEASE_SERVER_MODEL_ID,
-//                                           0,
-//                                           pb1_pressrelease_request,
-//                                           pb1_pressrelease_change);
+  mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID,
+                                           0,
+                                           pb1_pressrelease_request,
+                                           pb1_pressrelease_change);
 }
 
 /***************************************************************************//**
@@ -249,14 +249,14 @@ static void pb0_pressrelease_change(uint16_t model_id,
 	LOG_INFO("PB0 State Changed");
 }
 
-//static void pb1_pressrelease_change(uint16_t model_id,
-//                         uint16_t element_index,
-//                         const struct mesh_generic_state *current,
-//                         const struct mesh_generic_state *target,
-//                         uint32_t remaining_ms)
-//{
-//	LOG_INFO("PB1 State Changed");
-//}
+static void pb1_pressrelease_change(uint16_t model_id,
+                         uint16_t element_index,
+                         const struct mesh_generic_state *current,
+                         const struct mesh_generic_state *target,
+                         uint32_t remaining_ms)
+{
+	LOG_INFO("PB1 State Changed");
+}
 
 //// this works for now because this function is not used anyways, it may not work if it is actually used
 //static void onoff_change()
@@ -314,29 +314,24 @@ static void pb0_pressrelease_request(uint16_t model_id,
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB0 Released");
 	else if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB0 Pressed");
-
-//	if(request->pb1_press_release == MESH_GENERIC_PB1_PRESS_RELEASE_STATE_RELEASE)
-//		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Released");
-//	else if(request->pb1_press_release == MESH_GENERIC_PB1_PRESS_RELEASE_STATE_PRESS)
-//		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Pressed");
 }
 
-//static void pb1_pressrelease_request(uint16_t model_id,
-//                          uint16_t element_index,
-//                          uint16_t client_addr,
-//                          uint16_t server_addr,
-//                          uint16_t appkey_index,
-//                          const struct mesh_generic_request *request,
-//                          uint32_t transition_ms,
-//                          uint16_t delay_ms,
-//                          uint8_t request_flags)
-//{
-//	LOG_INFO("PB1 request");
-//	if(request->pb1_press_release == MESH_GENERIC_PB1_PRESS_RELEASE_STATE_RELEASE)
-//		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Released");
-//	else if(request->pb1_press_release == MESH_GENERIC_PB1_PRESS_RELEASE_STATE_PRESS)
-//		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Pressed");
-//}
+static void pb1_pressrelease_request(uint16_t model_id,
+                          uint16_t element_index,
+                          uint16_t client_addr,
+                          uint16_t server_addr,
+                          uint16_t appkey_index,
+                          const struct mesh_generic_request *request,
+                          uint32_t transition_ms,
+                          uint16_t delay_ms,
+                          uint8_t request_flags)
+{
+	LOG_INFO("PB1 request");
+	if(request->level == 0x02)
+		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Released");
+	else if(request->level == MESH_GENERIC_ON_OFF_STATE_ON)
+		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Pressed");
+}
 
 
 /***************************************************************************//**
@@ -554,28 +549,28 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			}
 		}
 
-//		if(((evt->data.evt_system_external_signal.extsignals) & PB1_FLAG) != 0) {
-//			req.kind = mesh_generic_request_pb1_press_release;
-//
-//			if(GPIO_PinInGet(PB1_PORT, PB1_PIN) == 0) {
-//				LOG_INFO("PB1 Pressed");
-//				req.pb1_press_release = MESH_GENERIC_PB1_PRESS_RELEASE_STATE_PRESS;
-//			}
-//			else {
-//				LOG_INFO("PB1 Released");
-//				req.pb1_press_release = MESH_GENERIC_PB1_PRESS_RELEASE_STATE_RELEASE;
-//			}
-//
-//			trid++;
-//
-//			resp = mesh_lib_generic_client_publish(MESH_GENERIC_PB1_PRESS_RELEASE_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
-//
-//			if (resp) {
-//				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
-//			} else {
-//				LOG_INFO("request sent, trid = %u", trid);
-//			}
-//		}
+		if(((evt->data.evt_system_external_signal.extsignals) & PB1_FLAG) != 0) {
+			req.kind = mesh_generic_request_level;
+
+			if(GPIO_PinInGet(PB1_PORT, PB1_PIN) == 0) {
+				LOG_INFO("PB1 Pressed");
+				req.level = MESH_GENERIC_ON_OFF_STATE_ON;
+			}
+			else {
+				LOG_INFO("PB1 Released");
+				req.level = 0x02;
+			}
+
+			trid++;
+
+			resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+
+			if (resp) {
+				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
+			} else {
+				LOG_INFO("request sent, trid = %u", trid);
+			}
+		}
 		break;
 #endif
 
