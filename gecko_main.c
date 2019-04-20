@@ -162,22 +162,6 @@ void set_device_name(bd_addr *pAddr)
  * Initialization of the models supported by this node.
  * This function registers callbacks for each of the supported models.
  ******************************************************************************/
-//static void init_models(void)
-//{
-//  mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-//                                           0,
-//                                           onoff_request,
-//                                           onoff_change);
-//}
-
-//static void init_models(void)
-//{
-//  mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-//                                           0,
-//                                           pressrelease_request,
-//                                           pressrelease_change);
-//}
-
 static void init_models(void)
 {
   mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
@@ -185,71 +169,11 @@ static void init_models(void)
                                            pb0_pressrelease_request,
                                            pb0_pressrelease_change);
 
-  mesh_lib_generic_server_register_handler(MESH_LIGHTING_LIGHTNESS_SERVER_MODEL_ID,
+  mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID,
                                            0,
                                            pb1_pressrelease_request,
                                            pb1_pressrelease_change);
 }
-
-/***************************************************************************//**
- * Update generic on/off state.
- *
- * @param[in] element_index  Server model element index.
- *
- * @return Status of the update operation.
- *         Returns bg_err_success (0) if succeed, non-zero otherwise.
- ******************************************************************************/
-//static errorcode_t onoff_update(uint16_t element_index)
-//{
-//  struct mesh_generic_state current, target;
-//
-//  return mesh_lib_generic_server_update(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-//                                        element_index,
-//                                        &current,
-//                                        &target,
-//                                        0);
-//}
-
-/***************************************************************************//**
- * Update generic on/off state and publish model state to the network.
- *
- * @param[in] element_index  Server model element index.
- *
- * @return Status of the update and publish operation.
- *         Returns bg_err_success (0) if succeed, non-zero otherwise.
- ******************************************************************************/
-//static errorcode_t onoff_update_and_publish(uint16_t element_index)
-//{
-//  errorcode_t e;
-//
-//  e = onoff_update(element_index);
-//  if (e == bg_err_success) {
-//    e = mesh_lib_generic_server_publish(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
-//                                        element_index,
-//                                        mesh_generic_state_on_off);
-//  }
-//
-//  return e;
-//}
-
-/***************************************************************************//**
- * This function is a handler for generic on/off change event.
- *
- * @param[in] model_id       Server model ID.
- * @param[in] element_index  Server model element index.
- * @param[in] current        Pointer to current state structure.
- * @param[in] target         Pointer to target state structure.
- * @param[in] remaining_ms   Time (in milliseconds) remaining before transition
- *                           from current state to target state is complete.
- ******************************************************************************/
-//static void onoff_change(uint16_t model_id,
-//                         uint16_t element_index,
-//                         const struct mesh_generic_state *current,
-//                         const struct mesh_generic_state *target,
-//                         uint32_t remaining_ms)
-//{
-//	LOG_INFO("State Changed");
-//}
 
 static void pb0_pressrelease_change(uint16_t model_id,
                          uint16_t element_index,
@@ -269,48 +193,6 @@ static void pb1_pressrelease_change(uint16_t model_id,
 	LOG_INFO("PB1 State Changed");
 }
 
-//// this works for now because this function is not used anyways, it may not work if it is actually used
-//static void onoff_change()
-//{
-//	LOG_INFO("State Changed");
-//}
-
-/***************************************************************************//**
- * This function process the requests for the generic on/off model.
- *
- * @param[in] model_id       Server model ID.
- * @param[in] element_index  Server model element index.
- * @param[in] client_addr    Address of the client model which sent the message.
- * @param[in] server_addr    Address the message was sent to.
- * @param[in] appkey_index   The application key index used in encrypting the request.
- * @param[in] request        Pointer to the request structure.
- * @param[in] transition_ms  Requested transition time (in milliseconds).
- * @param[in] delay_ms       Delay time (in milliseconds).
- * @param[in] request_flags  Message flags. Bitmask of the following:
- *                           - Bit 0: Nonrelayed. If nonzero indicates
- *                                    a response to a nonrelayed request.
- *                           - Bit 1: Response required. If nonzero client
- *                                    expects a response from the server.
- ******************************************************************************/
-//static void onoff_request(uint16_t model_id,
-//                          uint16_t element_index,
-//                          uint16_t client_addr,
-//                          uint16_t server_addr,
-//                          uint16_t appkey_index,
-//                          const struct mesh_generic_request *request,
-//                          uint32_t transition_ms,
-//                          uint16_t delay_ms,
-//                          uint8_t request_flags)
-//{
-//	if(request->on_off == MESH_GENERIC_ON_OFF_STATE_OFF)
-//		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Released");
-//	else if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
-//		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "Button Pressed");
-//
-////	onoff_update_and_publish(element_index);
-//}
-
-// all parameters in request function are required even if they are not used or it won't work
 static void pb0_pressrelease_request(uint16_t model_id,
                           uint16_t element_index,
                           uint16_t client_addr,
@@ -338,9 +220,9 @@ static void pb1_pressrelease_request(uint16_t model_id,
                           uint8_t request_flags)
 {
 	LOG_INFO("PB1 request");
-	if(request->lightness == 0x02)
+	if(request->level == 0x02)
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB1 Released");
-	else if(request->lightness == MESH_GENERIC_ON_OFF_STATE_ON)
+	else if(request->level == MESH_GENERIC_ON_OFF_STATE_ON)
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB1 Pressed");
 }
 
@@ -521,7 +403,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				vibActivationFlag = 1;
 				break;
 
-			case VIBRATION_ALERT:
+			case VIBRATION_LOCAL_ALERT:
 				;
 				static uint8_t toggleCnt = 0;
 
@@ -538,7 +420,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 					// Stop timer after 100 toggles or 10 seconds
 					if(toggleCnt > 100) {
 						toggleCnt = 0;
-						gecko_cmd_hardware_set_soft_timer(0, VIBRATION_ALERT, 0);
+						gecko_cmd_hardware_set_soft_timer(0, VIBRATION_LOCAL_ALERT, 0);
 						DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, " ");
 					}
 				}
@@ -595,20 +477,20 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 		// PB1 button press
 		if(((evt->data.evt_system_external_signal.extsignals) & PB1_FLAG) != 0) {
-			req.kind = mesh_lighting_request_lightness_actual;
+			req.kind = mesh_generic_request_level;
 
 			if(GPIO_PinInGet(PB1_PORT, PB1_PIN) == 0) {
 				LOG_INFO("PB1 Pressed");
-				req.lightness = MESH_GENERIC_ON_OFF_STATE_ON;
+				req.level = MESH_GENERIC_ON_OFF_STATE_ON;
 			}
 			else {
 				LOG_INFO("PB1 Released");
-				req.lightness = 0x02;
+				req.level = 0x02;
 			}
 
 			trid++;
 
-			resp = mesh_lib_generic_client_publish(MESH_LIGHTING_LIGHTNESS_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+			resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 
 			if (resp) {
 				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
@@ -674,7 +556,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 				// Set alarm in case of earthquake
 				// Alert frequency 200 ms
-				gecko_cmd_hardware_set_soft_timer(3277, VIBRATION_ALERT, 0);
+				gecko_cmd_hardware_set_soft_timer(3277, VIBRATION_LOCAL_ALERT, 0);
 
 				LOG_INFO("VIB FLAG");
 			}
