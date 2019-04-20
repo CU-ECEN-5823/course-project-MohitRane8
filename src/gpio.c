@@ -18,16 +18,25 @@ CORE_DECLARE_IRQ_STATE;
 
 void gpioInit()
 {
+	/* LED configuration */
 	GPIO_DriveStrengthSet(LED0_port, gpioDriveStrengthWeakAlternateStrong);
-	//GPIO_DriveStrengthSet(LED0_port, gpioDriveStrengthWeakAlternateWeak);
 	GPIO_PinModeSet(LED0_port, LED0_pin, gpioModePushPull, false);
 	GPIO_DriveStrengthSet(LED1_port, gpioDriveStrengthWeakAlternateStrong);
-	//GPIO_DriveStrengthSet(LED1_port, gpioDriveStrengthWeakAlternateWeak);
 	GPIO_PinModeSet(LED1_port, LED1_pin, gpioModePushPull, false);
 
 	/* PB0 passkey confirmation button configuration */
 	GPIO_PinModeSet(PB0_PORT, PB0_PIN, gpioModeInputPull, true);
 	GPIO_PinModeSet(PB1_PORT, PB1_PIN, gpioModeInputPull, true);
+
+	/* Infrared Sensor gpio configuration */
+	GPIO_PinModeSet(IR_1_PORT, IR_1_PIN, gpioModeInputPull, true);
+	GPIO_PinModeSet(IR_2_PORT, IR_2_PIN, gpioModeInputPull, true);
+
+	/* Vibration Sensor gpio configuration */
+	GPIO_PinModeSet(VIBRATION_PORT, VIBRATION_PIN, gpioModeInputPull, true);
+
+	/* Buzzer gpio configuration */
+	GPIO_PinModeSet(BUZZER_PORT, BUZZER_PIN, gpioModePushPull, false);
 }
 
 void gpioIntEnable()
@@ -36,8 +45,12 @@ void gpioIntEnable()
 	GPIO_IntConfig(PB0_PORT, PB0_PIN, true, true, true);
 	GPIO_IntConfig(PB1_PORT, PB1_PIN, true, true, true);
 
-	// sensor pin
-//	GPIO_IntConfig(gpioPortA, 1, true, true, true);
+	/* Infrared Sensor configured for falling edge and enabling its interrupt */
+	GPIO_IntConfig(IR_1_PORT, IR_1_PIN, false, true, true);
+	GPIO_IntConfig(IR_2_PORT, IR_2_PIN, false, true, true);
+
+	/* Vibration Sensor configured for falling edge and enabling its interrupt */
+	GPIO_IntConfig(VIBRATION_PORT, VIBRATION_PIN, false, true, true);
 
 	/* Enabling GPIO in NVIC */
 	NVIC_EnableIRQ(GPIO_EVEN_IRQn);
@@ -56,6 +69,15 @@ void GPIO_EVEN_IRQHandler(void)
 	// pin 6, so 7th bit set (0x40)
 	if(reason & 0x40)
 		gecko_external_signal(PB0_FLAG);
+
+	// IR1 pin 10, so 11th bit set
+	if(reason & 0x400)
+		gecko_external_signal(IR1_FLAG);
+
+	// VIBRATION pin 12, so 13th bit set
+	if(reason & 0x1000)
+		gecko_external_signal(VIB_FLAG);
+
 	CORE_EXIT_CRITICAL();
 }
 
@@ -72,10 +94,26 @@ void GPIO_ODD_IRQHandler(void)
 	if(reason & 0x80)
 		gecko_external_signal(PB1_FLAG);
 
-	// for sensor pin
-//	else if(reason & )
-//		LOG_INFO("Sensor interrupt received");
+	// IR2 pin 11, so 12th bit set
+	if(reason & 0x800)
+		gecko_external_signal(IR2_FLAG);
+
 	CORE_EXIT_CRITICAL();
+}
+
+//void buzzerSetToggle()
+//{
+//	gecko_cmd_hardware_set_soft_timer(1 * 32768, DISPLAY_UPDATE, 0);
+//}
+
+void buzzerSetOn()
+{
+	GPIO_PinOutSet(BUZZER_PORT, BUZZER_PIN);
+}
+
+void buzzerSetOff()
+{
+	GPIO_PinOutClear(BUZZER_PORT, BUZZER_PIN);
 }
 
 void gpioLed0SetOn()

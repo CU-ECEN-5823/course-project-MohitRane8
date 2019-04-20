@@ -22,9 +22,23 @@
 #define PB0_PORT gpioPortF
 #define PB0_PIN 6
 
-/* Push Button PB0 connected to pin PF7 */
+/* Push Button PB1 connected to pin PF7 */
 #define PB1_PORT gpioPortF
 #define PB1_PIN 7
+
+/* Infrared Sensor port and pin */
+#define IR_1_PORT gpioPortD
+#define IR_1_PIN 10
+#define IR_2_PORT gpioPortD
+#define IR_2_PIN 11
+
+/* Vibration Sensor port and pin */
+#define VIBRATION_PORT gpioPortD
+#define VIBRATION_PIN 12
+
+/* Buzzer port and pin */
+#define BUZZER_PORT gpioPortA
+#define BUZZER_PIN 3
 
 void gpioInit();
 void gpioIntEnable();

@@ -41,12 +41,19 @@ static uint8 num_connections = 0;
 /* Hardware soft timer handles */
 #define TIMER_ID_FACTORY_RESET 0x01
 #define TIMER_ID_RESTART 0x02
-#define DISPLAY_UPDATE 0x11
-#define LOG_TIME_UPDATE 0x12
-#define TIMER_ID_FRIEND_FIND 0x13
+#define DISPLAY_UPDATE 0x04
+#define LOG_TIME_UPDATE 0x08
+#define TIMER_ID_FRIEND_FIND 0x10
+#define IR1_TIMEOUT_FLAG 0x20
+#define IR2_TIMEOUT_FLAG 0x40
+#define VIB_TIMEOUT_FLAG 0x80
+#define VIBRATION_ALERT 0x81
 
 #define PB0_FLAG 0x01
 #define PB1_FLAG 0x02
+#define IR1_FLAG 0x04
+#define IR2_FLAG 0x08
+#define VIB_FLAG 0x10
 
 void set_device_name(bd_addr *pAddr);
 

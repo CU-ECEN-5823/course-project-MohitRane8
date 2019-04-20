@@ -57,6 +57,17 @@
 #endif
 #include "src/ble_mesh_device_type.h"
 
+/* Variables required for project */
+/* People count using IR Sensor */
+int16_t peopleCount = 0;
+uint8_t ir1Value = 0;
+uint8_t ir2Value = 0;
+
+/* Sensors activation flag - to remove false notifications */
+uint8_t ir1ActivationFlag = 1;
+uint8_t ir2ActivationFlag = 1;
+uint8_t vibActivationFlag = 1;
+
 /***********************************************************************************************//**
  * @addtogroup Application
  * @{
@@ -174,7 +185,7 @@ static void init_models(void)
                                            pb0_pressrelease_request,
                                            pb0_pressrelease_change);
 
-  mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID,
+  mesh_lib_generic_server_register_handler(MESH_LIGHTING_LIGHTNESS_SERVER_MODEL_ID,
                                            0,
                                            pb1_pressrelease_request,
                                            pb1_pressrelease_change);
@@ -327,10 +338,10 @@ static void pb1_pressrelease_request(uint16_t model_id,
                           uint8_t request_flags)
 {
 	LOG_INFO("PB1 request");
-	if(request->level == 0x02)
-		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Released");
-	else if(request->level == MESH_GENERIC_ON_OFF_STATE_ON)
-		DISPLAY_PRINTF(DISPLAY_ROW_TEMPVALUE, "PB1 Pressed");
+	if(request->lightness == 0x02)
+		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB1 Released");
+	else if(request->lightness == MESH_GENERIC_ON_OFF_STATE_ON)
+		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB1 Pressed");
 }
 
 
@@ -349,8 +360,8 @@ void lpn_init(void)
 
 	// Configure the lpn with following parameters:
 	// - Minimum friend queue length = 2
-	// - Poll timeout = 5 seconds
-	res = gecko_cmd_mesh_lpn_configure(2, 5 * 1000)->result;
+	// - Poll timeout = 1 seconds
+	res = gecko_cmd_mesh_lpn_configure(2, 1 * 1000)->result;
 	if (res) {
 		LOG_INFO("LPN conf failed (0x%x)", res);
 		return;
@@ -392,8 +403,8 @@ void gecko_bgapi_classes_init_server_friend(void)
 	//gecko_bgapi_class_mesh_health_client_init();
 	//gecko_bgapi_class_mesh_health_server_init();
 	//gecko_bgapi_class_mesh_test_init();
-//	gecko_bgapi_class_mesh_lpn_init();
-	gecko_bgapi_class_mesh_friend_init();
+	gecko_bgapi_class_mesh_lpn_init();
+//	gecko_bgapi_class_mesh_friend_init();
 }
 
 
@@ -424,8 +435,8 @@ void gecko_bgapi_classes_init_client_lpn(void)
 	//gecko_bgapi_class_mesh_health_client_init();
 	//gecko_bgapi_class_mesh_health_server_init();
 	//gecko_bgapi_class_mesh_test_init();
-	gecko_bgapi_class_mesh_lpn_init();
-	//gecko_bgapi_class_mesh_friend_init();
+//	gecko_bgapi_class_mesh_lpn_init();
+	gecko_bgapi_class_mesh_friend_init();
 
 }
 void gecko_main_init()
@@ -498,7 +509,41 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				msecCount += 10;
 				break;
 
-			#if DEVICE_IS_ONOFF_PUBLISHER
+			case IR1_TIMEOUT_FLAG:
+				ir1ActivationFlag = 1;
+				break;
+
+			case IR2_TIMEOUT_FLAG:
+				ir2ActivationFlag = 1;
+				break;
+
+			case VIB_TIMEOUT_FLAG:
+				vibActivationFlag = 1;
+				break;
+
+			case VIBRATION_ALERT:
+				;
+				static uint8_t toggleCnt = 0;
+
+				if(toggleCnt % 2) {
+					toggleCnt++;
+					GPIO_PinOutSet(BUZZER_PORT, BUZZER_PIN);
+					gpioLed1SetOn();
+				}
+				else {
+					toggleCnt++;
+					GPIO_PinOutClear(BUZZER_PORT, BUZZER_PIN);
+					gpioLed1SetOff();
+
+					// Stop timer after 100 toggles or 10 seconds
+					if(toggleCnt > 100) {
+						toggleCnt = 0;
+						gecko_cmd_hardware_set_soft_timer(0, VIBRATION_ALERT, 0);
+						DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, " ");
+					}
+				}
+				break;
+
 			case TIMER_ID_FRIEND_FIND:
 			{
 				LOG_INFO("trying to find friend...");
@@ -509,7 +554,6 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				}
 			}
 			break;
-			#endif
     	}
     	break;
 
@@ -549,21 +593,22 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			}
 		}
 
+		// PB1 button press
 		if(((evt->data.evt_system_external_signal.extsignals) & PB1_FLAG) != 0) {
-			req.kind = mesh_generic_request_level;
+			req.kind = mesh_lighting_request_lightness_actual;
 
 			if(GPIO_PinInGet(PB1_PORT, PB1_PIN) == 0) {
 				LOG_INFO("PB1 Pressed");
-				req.level = MESH_GENERIC_ON_OFF_STATE_ON;
+				req.lightness = MESH_GENERIC_ON_OFF_STATE_ON;
 			}
 			else {
 				LOG_INFO("PB1 Released");
-				req.level = 0x02;
+				req.lightness = 0x02;
 			}
 
 			trid++;
 
-			resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+			resp = mesh_lib_generic_client_publish(MESH_LIGHTING_LIGHTNESS_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 
 			if (resp) {
 				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
@@ -571,6 +616,70 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				LOG_INFO("request sent, trid = %u", trid);
 			}
 		}
+
+		// Infrared Sensor 1 external event
+		if(((evt->data.evt_system_external_signal.extsignals) & IR1_FLAG) != 0) {
+			if(ir1ActivationFlag)
+			{
+				ir1ActivationFlag = 0;
+				LOG_INFO("IR1 FLAG");
+				gecko_cmd_hardware_set_soft_timer(1 * 32768, IR1_TIMEOUT_FLAG, 1);
+
+				if(ir2Value) {
+					ir2Value = 0;
+
+					if(peopleCount)
+						peopleCount--;
+
+					if(peopleCount == 0)
+						gpioLed0SetOff();
+
+					DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
+					LOG_INFO("People Inside: %d", peopleCount);
+				}
+				else
+					ir1Value = 1;
+			}
+		}
+
+		// Infrared Sensor 2 external event
+		if(((evt->data.evt_system_external_signal.extsignals) & IR2_FLAG) != 0) {
+			if(ir2ActivationFlag)
+			{
+				ir2ActivationFlag = 0;
+				LOG_INFO("IR2 FLAG");
+				gecko_cmd_hardware_set_soft_timer(1 * 32768, IR2_TIMEOUT_FLAG, 1);
+
+				if(ir1Value) {
+					ir1Value = 0;
+					peopleCount++;
+					gpioLed0SetOn();
+					DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
+					LOG_INFO("People Inside: %d", peopleCount);
+				}
+				else
+					ir2Value = 1;
+			}
+		}
+
+		// Vibration Sensor external event
+		if(((evt->data.evt_system_external_signal.extsignals) & VIB_FLAG) != 0) {
+			if(vibActivationFlag) {
+				vibActivationFlag = 0;
+
+				DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "EARTHQUAKE");
+
+				// Timeout of 1 sec
+				gecko_cmd_hardware_set_soft_timer(1 * 32768, VIB_TIMEOUT_FLAG, 1);
+
+				// Set alarm in case of earthquake
+				// Alert frequency 200 ms
+				gecko_cmd_hardware_set_soft_timer(3277, VIBRATION_ALERT, 0);
+
+				LOG_INFO("VIB FLAG");
+			}
+		}
+
 		break;
 #endif
 
@@ -593,17 +702,28 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			#if DEVICE_USES_BLE_MESH_CLIENT_MODEL
 						gecko_cmd_mesh_generic_client_init();
 						// Initialize Low Power Node functionality
-						lpn_init();
-						gpioIntEnable();
-			#else
-						gecko_cmd_mesh_generic_server_init();
-						//Initialize Friend functionality
-						LOG_INFO("Friend mode initialization");
+//						lpn_init();
+
+						/* trying friend role reversal */
 						uint16 res;
 						res = gecko_cmd_mesh_friend_init()->result;
 						if (res) {
 							LOG_INFO("Friend init failed 0x%x", res);
 						}
+
+						gpioIntEnable();
+			#else
+						gecko_cmd_mesh_generic_server_init();
+						//Initialize Friend functionality
+						LOG_INFO("Friend mode initialization");
+//						uint16 res;
+//						res = gecko_cmd_mesh_friend_init()->result;
+//						if (res) {
+//							LOG_INFO("Friend init failed 0x%x", res);
+//						}
+
+						/* trying lpn role reversal */
+						lpn_init();
 			#endif
 		}
 		else {
@@ -684,7 +804,6 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		}
 		break;
 
-#if DEVICE_IS_ONOFF_PUBLISHER
     case gecko_evt_mesh_lpn_friendship_established_id:
     	LOG_INFO("friendship established");
     	DISPLAY_PRINTF(DISPLAY_ROW_LPN, "LPN");
@@ -705,7 +824,6 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     		gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FRIEND_FIND, 1);
     	}
     	break;
-#endif
 
     case gecko_evt_gatt_server_user_write_request_id:
     	if (evt->data.evt_gatt_server_user_write_request.characteristic == gattdb_ota_control) {
