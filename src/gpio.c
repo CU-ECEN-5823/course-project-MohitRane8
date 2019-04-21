@@ -24,7 +24,7 @@ void gpioInit()
 	GPIO_DriveStrengthSet(LED1_port, gpioDriveStrengthWeakAlternateStrong);
 	GPIO_PinModeSet(LED1_port, LED1_pin, gpioModePushPull, false);
 
-	/* PB0 passkey confirmation button configuration */
+	/* PB0 and PB1 configuration */
 	GPIO_PinModeSet(PB0_PORT, PB0_PIN, gpioModeInputPull, true);
 	GPIO_PinModeSet(PB1_PORT, PB1_PIN, gpioModeInputPull, true);
 
@@ -41,9 +41,8 @@ void gpioInit()
 
 void gpioIntEnable()
 {
-	/* Configuring PB0 and PB1 for rising and falling edge and enabling its interrupt */
-	GPIO_IntConfig(PB0_PORT, PB0_PIN, true, true, true);
-	GPIO_IntConfig(PB1_PORT, PB1_PIN, true, true, true);
+	/* Configuring PB0 and PB1 for rising edge and enabling its interrupt */
+	GPIO_IntConfig(PB0_PORT, PB0_PIN, true, false, true);
 
 	/* Infrared Sensor configured for falling edge and enabling its interrupt */
 	GPIO_IntConfig(IR_1_PORT, IR_1_PIN, false, true, true);
@@ -77,7 +76,6 @@ void GPIO_EVEN_IRQHandler(void)
 	// VIBRATION pin 12, so 13th bit set
 	if(reason & 0x1000)
 		gecko_external_signal(VIB_FLAG);
-
 	CORE_EXIT_CRITICAL();
 }
 
@@ -89,31 +87,10 @@ void GPIO_ODD_IRQHandler(void)
 	/* Clearing all interrupts */
 	GPIO_IntClear(reason);
 
-	// if interrupt came from PB1, send gecko external signal 0x11 for button press
-	// pin 7, so 8th bit set (0x80)
-	if(reason & 0x80)
-		gecko_external_signal(PB1_FLAG);
-
 	// IR2 pin 11, so 12th bit set
 	if(reason & 0x800)
 		gecko_external_signal(IR2_FLAG);
-
 	CORE_EXIT_CRITICAL();
-}
-
-//void buzzerSetToggle()
-//{
-//	gecko_cmd_hardware_set_soft_timer(1 * 32768, DISPLAY_UPDATE, 0);
-//}
-
-void buzzerSetOn()
-{
-	GPIO_PinOutSet(BUZZER_PORT, BUZZER_PIN);
-}
-
-void buzzerSetOff()
-{
-	GPIO_PinOutClear(BUZZER_PORT, BUZZER_PIN);
 }
 
 void gpioLed0SetOn()
