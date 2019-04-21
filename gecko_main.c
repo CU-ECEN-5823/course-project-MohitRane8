@@ -162,20 +162,26 @@ static void init_models(void)
 {
   mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
                                            0,
-                                           pb0_pressrelease_request,
-                                           pb0_pressrelease_change);
+										   onoff_change,
+										   onoff_change);
+
+  mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID,
+                                           0,
+                                           level_request,
+                                           level_change);
 }
 
-static void pb0_pressrelease_change(uint16_t model_id,
+static void onoff_change(uint16_t model_id,
                          uint16_t element_index,
                          const struct mesh_generic_state *current,
                          const struct mesh_generic_state *target,
                          uint32_t remaining_ms)
 {
-	LOG_INFO("PB0 State Changed");
+	// unused
+	LOG_INFO("OnOff State Changed");
 }
 
-static void pb0_pressrelease_request(uint16_t model_id,
+static void onoff_request(uint16_t model_id,
                           uint16_t element_index,
                           uint16_t client_addr,
                           uint16_t server_addr,
@@ -189,6 +195,29 @@ static void pb0_pressrelease_request(uint16_t model_id,
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB0 Released");
 	else if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB0 Pressed");
+}
+
+static void level_change(uint16_t model_id,
+                         uint16_t element_index,
+                         const struct mesh_generic_state *current,
+                         const struct mesh_generic_state *target,
+                         uint32_t remaining_ms)
+{
+	// unused
+	LOG_INFO("Level State Changed");
+}
+
+static void level_request(uint16_t model_id,
+                          uint16_t element_index,
+                          uint16_t client_addr,
+                          uint16_t server_addr,
+                          uint16_t appkey_index,
+                          const struct mesh_generic_request *request,
+                          uint32_t transition_ms,
+                          uint16_t delay_ms,
+                          uint8_t request_flags)
+{
+
 }
 
 /***************************************************************************//**
@@ -519,7 +548,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			LOG_INFO("node is provisioned. address:%x, ivi:%ld", pData->address, pData->ivi);
 
 			mesh_lib_init(malloc,free,8);
-//			init_models();
+			init_models();
 
 			gecko_cmd_mesh_generic_client_init();
 
@@ -550,7 +579,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		LOG_INFO("node is provisioned. address:%x, ivi:%ld", pData->address, pData->ivi);
 
 		mesh_lib_init(malloc,free,8);
-//			init_models();
+		init_models();
 
 		gecko_cmd_mesh_generic_client_init();
 
