@@ -57,12 +57,19 @@ static uint8 num_connections = 0;
 #define VIB_FLAG 				(0x10)
 
 /* MACROS FOR DATA SENT VIA MODELS */
-#define GAS_ALERT 				(0x01)		// ON_OFF model
-#define FIRE_ALERT 				(0x01)		// LEVEL model
-#define NOISE_ALERT 			(0x02)		// ON_OFF model
-#define HUMIDITY_ALERT 			(0x02)		// LEVEL model
-#define VIBRATION_ALERT 		(0x03)		// ON_OFF model
-#define PB0_STOP_ALERT 			(0x05)		// ON_OFF and LEVEL model
+#define PB0_STOP_ALERT			(0x01)		// LEVEL model
+#define VIBRATION_ALERT 		(0x0A)		// LEVEL model
+#define LIGHT_CONTROL_ON		(0x1B)		// LEVEL model
+#define LIGHT_CONTROL_OFF		(0x2B)		// LEVEL model
+#define GAS_ALERT				(0x0C)		// LEVEL model
+#define FIRE_ALERT 				(0x0D)		// LEVEL model
+#define NOISE_ALERT 			(0x0E)		// LEVEL model
+#define HUMIDITY_ALERT 			(0x0F)		// LEVEL model
+
+#if 0
+#define PB0_STOP_ALERT			(0x01)		// ON_OFF model
+#define GAS_ALERT				(0x00)		// ON_OFF model
+#endif
 
 
 void set_device_name(bd_addr *pAddr);

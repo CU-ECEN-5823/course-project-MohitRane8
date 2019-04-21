@@ -445,15 +445,13 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			// To turn off alert, make toggle count max
 			toggleCnt = 101;
 
-			req.kind = mesh_generic_state_on_off;
+			LOG_INFO("PB0 INT");
 
-			LOG_INFO("PB0 Released");
-			req.on_off = MESH_GENERIC_ON_OFF_STATE_OFF;
-
+			// publish Alert Stop
+			req.kind = mesh_generic_request_level;
+			req.level = PB0_STOP_ALERT;
 			trid++;
-
-			resp = mesh_lib_generic_client_publish(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
-
+			resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 			if (resp) {
 				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 			} else {
@@ -466,7 +464,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			if(ir1ActivationFlag)
 			{
 				ir1ActivationFlag = 0;
-				LOG_INFO("IR1 FLAG");
+				LOG_INFO("IR1 INT");
 				gecko_cmd_hardware_set_soft_timer(1 * 32768, IR1_TIMEOUT_FLAG, 1);
 
 				if(ir2Value) {
@@ -475,8 +473,21 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 					if(peopleCount)
 						peopleCount--;
 
-					if(peopleCount == 0)
+					if(peopleCount == 0) {
+						// turn off lights locally
 						gpioLed0SetOff();
+
+						// publish lights off data when no person is in cave
+						req.kind = mesh_generic_request_level;
+						req.level = LIGHT_CONTROL_OFF;
+						trid++;
+						resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+						if (resp) {
+							LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
+						} else {
+							LOG_INFO("request sent, trid = %u", trid);
+						}
+					}
 
 					DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
 					LOG_INFO("People Inside: %d", peopleCount);
@@ -491,7 +502,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			if(ir2ActivationFlag)
 			{
 				ir2ActivationFlag = 0;
-				LOG_INFO("IR2 FLAG");
+				LOG_INFO("IR2 INT");
 				gecko_cmd_hardware_set_soft_timer(1 * 32768, IR2_TIMEOUT_FLAG, 1);
 
 				if(ir1Value) {
@@ -500,6 +511,20 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 					gpioLed0SetOn();
 					DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
 					LOG_INFO("People Inside: %d", peopleCount);
+
+					// publish lights on data when there is someone in cave
+					if(peopleCount == 1)
+					{
+						req.kind = mesh_generic_request_level;
+						req.level = LIGHT_CONTROL_ON;
+						trid++;
+						resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+						if (resp) {
+							LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
+						} else {
+							LOG_INFO("request sent, trid = %u", trid);
+						}
+					}
 				}
 				else
 					ir2Value = 1;
@@ -520,14 +545,13 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				// Alert frequency 200 ms
 				gecko_cmd_hardware_set_soft_timer(3277, VIBRATION_LOCAL_ALERT, 0);
 
-				LOG_INFO("VIB FLAG");
+				LOG_INFO("VIB INT");
 
 				// Publication of alert
-				req.kind = mesh_generic_state_on_off;
-//				req.on_off = VIBRATION_ALERT;
-				req.on_off = 0x01;
+				req.kind = mesh_generic_request_level;
+				req.level = VIBRATION_ALERT;
 				trid++;
-				resp = mesh_lib_generic_client_publish(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+				resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 				if (resp) {
 					LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 				} else {
