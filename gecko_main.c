@@ -160,64 +160,74 @@ void set_device_name(bd_addr *pAddr)
  ******************************************************************************/
 static void init_models(void)
 {
-  mesh_lib_generic_server_register_handler(MESH_GENERIC_ON_OFF_SERVER_MODEL_ID,
+	mesh_lib_generic_client_register_handler(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID,
                                            0,
-										   onoff_change,
-										   onoff_change);
+										   onoff);
 
-  mesh_lib_generic_server_register_handler(MESH_GENERIC_LEVEL_SERVER_MODEL_ID,
+	mesh_lib_generic_client_register_handler(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID,
                                            0,
-                                           level_request,
-                                           level_change);
+                                           level);
 }
 
-static void onoff_change(uint16_t model_id,
-                         uint16_t element_index,
-                         const struct mesh_generic_state *current,
-                         const struct mesh_generic_state *target,
-                         uint32_t remaining_ms)
+static void onoff(uint16_t model_id,
+					uint16_t element_index,
+					uint16_t client_addr,
+					uint16_t server_addr,
+					const struct mesh_generic_state *current,
+					const struct mesh_generic_state *target,
+					uint32_t remaining_ms,
+					uint8_t response_flags)
 {
-	// unused
 	LOG_INFO("OnOff State Changed");
 }
 
-static void onoff_request(uint16_t model_id,
-                          uint16_t element_index,
-                          uint16_t client_addr,
-                          uint16_t server_addr,
-                          uint16_t appkey_index,
-                          const struct mesh_generic_request *request,
-                          uint32_t transition_ms,
-                          uint16_t delay_ms,
-                          uint8_t request_flags)
+static void level(uint16_t model_id,
+					uint16_t element_index,
+					uint16_t client_addr,
+					uint16_t server_addr,
+					const struct mesh_generic_state *current,
+					const struct mesh_generic_state *target,
+					uint32_t remaining_ms,
+					uint8_t response_flags)
 {
-	if(request->on_off == MESH_GENERIC_ON_OFF_STATE_OFF)
-		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB0 Released");
-	else if(request->on_off == MESH_GENERIC_ON_OFF_STATE_ON)
-		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PB0 Pressed");
-}
+	// stop alert
+	if(current->level.level == PB0_STOP_ALERT)
+	{
+		toggleCnt = 101;
+	}
 
-static void level_change(uint16_t model_id,
-                         uint16_t element_index,
-                         const struct mesh_generic_state *current,
-                         const struct mesh_generic_state *target,
-                         uint32_t remaining_ms)
-{
-	// unused
-	LOG_INFO("Level State Changed");
-}
+	// gas alert
+	if(current->level.level == GAS_ALERT)
+	{
+		DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "GAS ALERT");
+		toggleCnt = 0;
+		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
+	}
 
-static void level_request(uint16_t model_id,
-                          uint16_t element_index,
-                          uint16_t client_addr,
-                          uint16_t server_addr,
-                          uint16_t appkey_index,
-                          const struct mesh_generic_request *request,
-                          uint32_t transition_ms,
-                          uint16_t delay_ms,
-                          uint8_t request_flags)
-{
+	// fire alert
+	if(current->level.level == FIRE_ALERT)
+	{
+		DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "FIRE ALERT");
+		DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, "SPRINKLER ON");
+		toggleCnt = 0;
+		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
+	}
 
+	// noise alert
+	if(current->level.level == NOISE_ALERT)
+	{
+		DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "NOISE ALERT");
+		toggleCnt = 0;
+		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
+	}
+
+	// humidity alert
+	if(current->level.level == HUMIDITY_ALERT)
+	{
+		DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "HUMIDITY ALERT");
+		toggleCnt = 0;
+		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
+	}
 }
 
 /***************************************************************************//**
@@ -396,35 +406,25 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				vibActivationFlag = 1;
 				break;
 
-			case VIBRATION_LOCAL_ALERT:
+			case FRIEND_ALERT:
+				toggleCnt++;
 				if(toggleCnt % 2) {
-					toggleCnt++;
 					GPIO_PinOutSet(BUZZER_PORT, BUZZER_PIN);
 					gpioLed1SetOn();
 				}
 				else {
-					toggleCnt++;
 					GPIO_PinOutClear(BUZZER_PORT, BUZZER_PIN);
 					gpioLed1SetOff();
 
 					// Stop timer after 100 toggles or 10 seconds
 					if(toggleCnt > 100) {
 						toggleCnt = 0;
-						gecko_cmd_hardware_set_soft_timer(0, VIBRATION_LOCAL_ALERT, 0);
+						gecko_cmd_hardware_set_soft_timer(0, FRIEND_ALERT, 0);
 						DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, " ");
+						DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, " ");
 					}
 				}
 				break;
-
-//			case TIMER_ID_FRIEND_FIND:
-//			{
-//				LOG_INFO("trying to find friend...");
-//				uint16_t result;
-//				result = gecko_cmd_mesh_lpn_establish_friendship(0)->result;
-//				if (result != 0) {
-//					LOG_INFO("ret.code %x", result);
-//				}
-//			}
 			break;
     	}
     	break;
@@ -537,13 +537,15 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				vibActivationFlag = 0;
 
 				DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "EARTHQUAKE");
+				DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, " ");
 
 				// Timeout of 1 sec
+				toggleCnt = 0;
 				gecko_cmd_hardware_set_soft_timer(1 * 32768, VIB_TIMEOUT_FLAG, 1);
 
 				// Set alarm in case of earthquake
 				// Alert frequency 200 ms
-				gecko_cmd_hardware_set_soft_timer(3277, VIBRATION_LOCAL_ALERT, 0);
+				gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
 
 				LOG_INFO("VIB INT");
 
@@ -569,6 +571,8 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 		if (pData->provisioned) {
 			DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PROVISIONED");
+			DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
+
 			LOG_INFO("node is provisioned. address:%x, ivi:%ld", pData->address, pData->ivi);
 
 			mesh_lib_init(malloc,free,8);
@@ -627,12 +631,6 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		LOG_INFO("evt:gecko_evt_le_connection_opened_id");
 		num_connections++;
 		DISPLAY_PRINTF(DISPLAY_ROW_CONNECTION, "Connected");
-
-//		#if DEVICE_IS_ONOFF_PUBLISHER
-//		// turn off lpn feature after GATT connection is opened
-//		gecko_cmd_mesh_lpn_deinit();
-//		DISPLAY_PRINTF(DISPLAY_ROW_LPN, "LPN off");
-//		#endif
 		break;
 
     case gecko_evt_le_connection_closed_id:
@@ -647,33 +645,9 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		if (num_connections > 0) {
 			if (--num_connections == 0) {
 				DISPLAY_PRINTF(DISPLAY_ROW_CONNECTION, " ");
-//				#if DEVICE_IS_ONOFF_PUBLISHER
-//				lpn_init();
-//				#endif
 			}
 		}
 		break;
-
-//    case gecko_evt_mesh_lpn_friendship_established_id:
-//    	LOG_INFO("friendship established");
-//    	DISPLAY_PRINTF(DISPLAY_ROW_LPN, "LPN");
-//    	break;
-//
-//    case gecko_evt_mesh_lpn_friendship_failed_id:
-//    	LOG_INFO("friendship failed");
-//    	DISPLAY_PRINTF(DISPLAY_ROW_LPN, "no friend");
-//    	// try again in 2 seconds
-//    	gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FRIEND_FIND, 1);
-//    	break;
-//
-//    case gecko_evt_mesh_lpn_friendship_terminated_id:
-//    	LOG_INFO("friendship terminated");
-//    	DISPLAY_PRINTF(DISPLAY_ROW_LPN, "friend lost");
-//    	if (num_connections == 0) {
-//    		// try again in 2 seconds
-//    		gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FRIEND_FIND, 1);
-//    	}
-//    	break;
 
     case gecko_evt_gatt_server_user_write_request_id:
     	if (evt->data.evt_gatt_server_user_write_request.characteristic == gattdb_ota_control) {
@@ -695,14 +669,9 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FACTORY_RESET, 1);
     	break;
 
-    case gecko_evt_mesh_generic_server_client_request_id:
-    	LOG_INFO("evt_mesh_generic_server_client_request_id");
-    	mesh_lib_generic_server_event_handler(evt);
-    	break;
-
-    case gecko_evt_mesh_generic_server_state_changed_id:
-    	LOG_INFO("evt_mesh_generic_server_state_changed_id");
-    	mesh_lib_generic_server_event_handler(evt);
+    case gecko_evt_mesh_generic_client_server_status_id:
+    	LOG_INFO("evt_mesh_generic_client_server_status_id");
+    	mesh_lib_generic_client_event_handler(evt);
     	break;
 
     default:
