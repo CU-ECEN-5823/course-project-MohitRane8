@@ -71,6 +71,9 @@ uint8_t vibActivationFlag = 1;
 /* Buzzer and LED1 toggle count */
 uint8_t toggleCnt = 0;
 
+/* Relay level from received from one LPN to external signal where it will be published */
+uint8_t relayLevel;
+
 /***********************************************************************************************//**
  * @addtogroup Application
  * @{
@@ -228,6 +231,10 @@ static void level(uint16_t model_id,
 		toggleCnt = 0;
 		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
 	}
+
+	// to relay data to another LPN
+	relayLevel = current->level.level;
+	gecko_external_signal(RELAY_FLAG);
 }
 
 /***************************************************************************//**
@@ -562,6 +569,19 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			}
 		}
 
+		// Relay the data coming from one LPN to another LPN
+		if(((evt->data.evt_system_external_signal.extsignals) & RELAY_FLAG) != 0) {
+			// Publication of alert
+			req.kind = mesh_generic_request_level;
+			req.level = relayLevel;
+			trid++;
+			resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+			if (resp) {
+				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
+			} else {
+				LOG_INFO("request sent, trid = %u", trid);
+			}
+		}
 		break;
 
     case gecko_evt_mesh_node_initialized_id:

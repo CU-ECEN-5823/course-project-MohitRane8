@@ -55,6 +55,7 @@ static uint8 num_connections = 0;
 #define IR1_FLAG 				(0x04)
 #define IR2_FLAG 				(0x08)
 #define VIB_FLAG 				(0x10)
+#define RELAY_FLAG				(0x20)
 
 /* MACROS FOR DATA SENT VIA MODELS */
 #define PB0_STOP_ALERT			(0x01)		// LEVEL model
