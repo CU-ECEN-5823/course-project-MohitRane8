@@ -73,6 +73,26 @@ static uint8 num_connections = 0;
 #endif
 
 
+/* Flash IDs for passing in Flash Store/Load functions */
+uint8_t flashData[20];
+uint8_t uintArray[20];
+char charArray[20];
+
+#define PEOPLE_COUNT_FLASH_ID			(0x01)
+#define ALERT_STATUS_FLASH_ID			(0x02)
+#define DISPLAY_ALERT_FLASH_ID			(0x03)
+
+/* Flash Save Keys */
+#define PEOPLE_COUNT_FLASH_ADDRESS 		(0x4000)
+#define ALERT_STATUS_FLASH_ADDRESS		(0x4001)
+#define DISPLAY_ALERT_FLASH_ADDRESS		(0x4002)
+
+/* Persistent data lengths */
+#define PEOPLE_COUNT_DATA_LENGTH		(1)
+#define ALERT_STATUS_DATA_LENGTH		(1)
+#define DISPLAY_ALERT_DATA_LENGTH		(20)
+
+
 void set_device_name(bd_addr *pAddr);
 
 static void init_models(void);
@@ -94,5 +114,11 @@ static void level(uint16_t model_id,
 					const struct mesh_generic_state *target,
 					uint32_t remaining_ms,
 					uint8_t response_flags);
+
+uint8_t* flashLoad(uint8_t flashID);
+void flashStore(uint8_t flashID, uint8_t *dataPtr);
+
+uint8_t* strToUint(char* str);
+char* uintToStr(uint8_t* buffer);
 
 #endif /* SRC_MAIN_H_ */

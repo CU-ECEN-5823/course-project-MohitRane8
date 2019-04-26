@@ -58,11 +58,9 @@
 #include "src/ble_mesh_device_type.h"
 
 /* Variables required for project */
-/* Flash Save Keys */
-uint16 peopleCountFlashKey = 0x4001;
-
 /* People count using IR Sensor */
-int16_t peopleCount = 0;
+uint8_t peopleCount = 0;
+uint8_t* peopleCountPtr;
 uint8_t ir1Value = 0;
 uint8_t ir2Value = 0;
 
@@ -72,7 +70,12 @@ uint8_t ir2ActivationFlag = 1;
 uint8_t vibActivationFlag = 1;
 
 /* Buzzer and LED1 toggle count */
-uint8_t toggleCnt = 0;
+uint8_t toggleCount = 0;
+uint8_t* toggleCountPtr;
+
+/* Character array to store display message */
+char* displayMessageString;
+uint8_t* displayBuffer;
 
 /* Relay level from received from one LPN to external signal where it will be published */
 uint8_t relayLevel;
@@ -199,14 +202,16 @@ static void level(uint16_t model_id,
 	// stop alert
 	if(current->level.level == PB0_STOP_ALERT)
 	{
-		toggleCnt = 101;
+		toggleCount = 101;
+		flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
 	}
 
 	// gas alert
 	if(current->level.level == GAS_ALERT)
 	{
 		DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "GAS ALERT");
-		toggleCnt = 0;
+		toggleCount = 0;
+		flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
 		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
 	}
 
@@ -215,7 +220,8 @@ static void level(uint16_t model_id,
 	{
 		DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "FIRE ALERT");
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, "SPRINKLER ON");
-		toggleCnt = 0;
+		toggleCount = 0;
+		flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
 		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
 	}
 
@@ -223,7 +229,8 @@ static void level(uint16_t model_id,
 	if(current->level.level == NOISE_ALERT)
 	{
 		DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "NOISE ALERT");
-		toggleCnt = 0;
+		toggleCount = 0;
+		flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
 		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
 	}
 
@@ -231,7 +238,8 @@ static void level(uint16_t model_id,
 	if(current->level.level == HUMIDITY_ALERT)
 	{
 		DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "HUMIDITY ALERT");
-		toggleCnt = 0;
+		toggleCount = 0;
+		flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
 		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
 	}
 
@@ -336,27 +344,27 @@ void gecko_bgapi_classes_init_client_lpn(void)
 }
 void gecko_main_init()
 {
-  // Initialize device
-  initMcu();
-  // Initialize board
-  initBoard();
-  // Initialize application
-  initApp();
+	// Initialize device
+	initMcu();
+	// Initialize board
+	initBoard();
+	// Initialize application
+	initApp();
 
-  // Minimize advertisement latency by allowing the advertiser to always
-  // interrupt the scanner.
-  linklayer_priorities.scan_max = linklayer_priorities.adv_min + 1;
+	// Minimize advertisement latency by allowing the advertiser to always
+	// interrupt the scanner.
+	linklayer_priorities.scan_max = linklayer_priorities.adv_min + 1;
 
-  gecko_stack_init(&config);
+	gecko_stack_init(&config);
 
-  if( DeviceUsesClientModel() ) {
-	  gecko_bgapi_classes_init_client_lpn();
-  } else {
-	  gecko_bgapi_classes_init_server_friend();
-  }
+	if( DeviceUsesClientModel() ) {
+		gecko_bgapi_classes_init_client_lpn();
+	} else {
+		gecko_bgapi_classes_init_server_friend();
+	}
 
-  // Initialize coexistence interface. Parameters are taken from HAL config.
-  gecko_initCoexHAL();
+	// Initialize coexistence interface. Parameters are taken from HAL config.
+	gecko_initCoexHAL();
 
 }
 
@@ -369,9 +377,6 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			LOG_INFO("factory reset");
 			DISPLAY_PRINTF(DISPLAY_ROW_ACTION, ">>>FACTORY RESET<<<");
 
-			/* perform a factory reset by erasing PS storage. This removes all the keys and other settings
-			that have been configured for this node */
-//			gecko_cmd_flash_ps_erase_all();
 			// reboot after a small delay
 			gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FACTORY_RESET, 1);
 		} else {
@@ -382,6 +387,19 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			// Initialize Mesh stack in Node operation mode, wait for initialized event
 			gecko_cmd_mesh_node_init();
 			LOG_INFO("BOOT DONE");
+
+			// loading persistent data - People Count
+			peopleCountPtr = flashLoad(PEOPLE_COUNT_FLASH_ID);
+			peopleCount = *peopleCountPtr;
+
+			// loading persistent data - Alert Status
+			toggleCountPtr = flashLoad(ALERT_STATUS_FLASH_ID);
+			toggleCount = *toggleCountPtr;
+
+			// loading persistent data - Display Message
+			displayBuffer = flashLoad(DISPLAY_ALERT_FLASH_ID);
+			displayMessageString = uintToStr(displayBuffer);
+			LOG_INFO("displayMessageString = %s", displayMessageString);
 		}
       break;
 
@@ -417,8 +435,9 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				break;
 
 			case FRIEND_ALERT:
-				toggleCnt++;
-				if(toggleCnt % 2) {
+				toggleCount++;
+				flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
+				if(toggleCount % 2) {
 					GPIO_PinOutSet(BUZZER_PORT, BUZZER_PIN);
 					gpioLed1SetOn();
 				}
@@ -427,8 +446,9 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 					gpioLed1SetOff();
 
 					// Stop timer after 100 toggles or 10 seconds
-					if(toggleCnt > 100) {
-						toggleCnt = 0;
+					if(toggleCount > 100) {
+						toggleCount = 0;
+						flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
 						gecko_cmd_hardware_set_soft_timer(0, FRIEND_ALERT, 0);
 						DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, " ");
 						DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, " ");
@@ -453,7 +473,8 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		// PB0 button press
 		if (((evt->data.evt_system_external_signal.extsignals) & PB0_FLAG) != 0) {
 			// To turn off alert, make toggle count max
-			toggleCnt = 101;
+			toggleCount = 101;
+			flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
 
 			LOG_INFO("PB0 INT");
 
@@ -482,7 +503,17 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 					if(peopleCount)	{
 						peopleCount--;
-						gecko_cmd_flash_ps_save(peopleCountFlashKey, 2, &peopleCount);
+
+#if 0
+						// store people count in flash
+						resp = gecko_cmd_flash_ps_save(PEOPLE_COUNT_FLASH_ADDRESS, 1, &peopleCount)->result;
+						if (resp) {
+							LOG_INFO("flash store failed,code %x", resp);
+						} else {
+							LOG_INFO("flash store success");
+						}
+#endif
+						flashStore(PEOPLE_COUNT_FLASH_ID, &peopleCount);
 					}
 
 					if(peopleCount == 0) {
@@ -520,7 +551,18 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				if(ir1Value) {
 					ir1Value = 0;
 					peopleCount++;
-					gecko_cmd_flash_ps_save(peopleCountFlashKey, 2, &peopleCount);
+
+#if 0
+					// store people count in flash
+					resp = gecko_cmd_flash_ps_save(PEOPLE_COUNT_FLASH_ADDRESS, 1, &peopleCount)->result;
+					if (resp) {
+						LOG_INFO("flash store failed,code %x", resp);
+					} else {
+						LOG_INFO("flash store success");
+					}
+#endif
+					flashStore(PEOPLE_COUNT_FLASH_ID, &peopleCount);
+
 					gpioLed0SetOn();
 					DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
 					LOG_INFO("People Inside: %d", peopleCount);
@@ -552,8 +594,12 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "EARTHQUAKE");
 				DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, " ");
 
+				// store alert display message in persistent memory
+				char* str = "EARTHQUAKE";
+				uint8_t* buffer = strToUint(str);
+				flashStore(DISPLAY_ALERT_FLASH_ID, buffer);
+
 				// Timeout of 1 sec
-				toggleCnt = 0;
 				gecko_cmd_hardware_set_soft_timer(1 * 32768, VIB_TIMEOUT_FLAG, 1);
 
 				// Set alarm in case of earthquake
@@ -598,9 +644,15 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		if (pData->provisioned) {
 			DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PROVISIONED");
 
-			// restoring people count from flash and displaying it
-			gecko_cmd_flash_ps_load(peopleCountFlashKey);
-			DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
+			/* Execution according to persistent data */
+			// Display previous count of people
+			if (peopleCount != 0)
+				DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
+			// Start previous alerts
+			if (toggleCount != 0)
+				gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
+			// Display previous alerts
+			DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "%s", displayMessageString);
 
 			LOG_INFO("node is provisioned. address:%x, ivi:%ld", pData->address, pData->ivi);
 
@@ -694,7 +746,6 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
       break;
 
     case gecko_evt_mesh_node_reset_id:
-    	gecko_cmd_flash_ps_erase_all();
     	gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FACTORY_RESET, 1);
     	break;
 
@@ -707,3 +758,108 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
       break;
   }
 }
+
+///***************************************************************************//**
+// * Storing Flash Key for Alert Toggle Count
+// ******************************************************************************/
+//void toggleCountFlashStore(uint8_t toggleCount) {
+//	uint16 resp = gecko_cmd_flash_ps_save(ALERT_STATUS_FLASH_ADDRESS, 1, &toggleCount)->result;
+//	if (resp) {
+//		LOG_INFO("flash store failed,code %x", resp);
+//	}
+//}
+//
+///***************************************************************************//**
+// * Loading Flash Key for Alert Toggle Count
+// ******************************************************************************/
+//void toggleCountFlashLoad(uint8_t toggleCount) {
+//	uint16 resp;
+//	struct gecko_msg_flash_ps_load_rsp_t* flashResponse;
+//	flashResponse = gecko_cmd_flash_ps_load(ALERT_STATUS_FLASH_ADDRESS);
+//	toggleCount = flashResponse->value.data[0];
+//	resp = flashResponse->result;
+//	if(resp) {
+//		LOG_INFO("flash load failed,code %x", resp);
+//	}
+//}
+
+/***************************************************************************//**
+ * Persistent Data Flash Load function
+ ******************************************************************************/
+uint8_t* flashLoad(uint8_t flashID) {
+	uint16 resp;
+	struct gecko_msg_flash_ps_load_rsp_t* flashResponse;
+
+	switch (flashID) {
+		case PEOPLE_COUNT_FLASH_ID:
+			flashResponse = gecko_cmd_flash_ps_load(PEOPLE_COUNT_FLASH_ADDRESS);
+			flashData[0] = flashResponse->value.data[0];
+			break;
+
+		case ALERT_STATUS_FLASH_ID:
+			flashResponse = gecko_cmd_flash_ps_load(ALERT_STATUS_FLASH_ADDRESS);
+			flashData[0] = flashResponse->value.data[0];
+			break;
+
+		case DISPLAY_ALERT_FLASH_ID:
+			flashResponse = gecko_cmd_flash_ps_load(DISPLAY_ALERT_FLASH_ADDRESS);
+			for(int i=0; i<DISPLAY_ALERT_DATA_LENGTH; i++)	{
+				flashData[i] = flashResponse->value.data[i];
+			}
+			break;
+	}
+
+	resp = flashResponse->result;
+	if(resp) {
+		LOG_INFO("flash load failed,code %x", resp);
+	} else {
+		LOG_INFO("flash load success");
+	}
+
+	return flashData;
+}
+
+/***************************************************************************//**
+ * Persistent Data Flash Store function
+ ******************************************************************************/
+void flashStore(uint8_t flashID, uint8_t *dataPtr) {
+	uint16 resp;
+
+	switch (flashID) {
+		case PEOPLE_COUNT_FLASH_ID:
+			resp = gecko_cmd_flash_ps_save(PEOPLE_COUNT_FLASH_ADDRESS, PEOPLE_COUNT_DATA_LENGTH, dataPtr)->result;
+			break;
+
+		case ALERT_STATUS_FLASH_ID:
+			resp = gecko_cmd_flash_ps_save(ALERT_STATUS_FLASH_ADDRESS, ALERT_STATUS_DATA_LENGTH, dataPtr)->result;
+			break;
+
+		case DISPLAY_ALERT_FLASH_ID:
+			resp = gecko_cmd_flash_ps_save(DISPLAY_ALERT_FLASH_ADDRESS, DISPLAY_ALERT_DATA_LENGTH, dataPtr)->result;
+			break;
+	}
+
+	if (resp) {
+		LOG_INFO("flash store failed,code %x", resp);
+	} else {
+		LOG_INFO("flash store success");
+	}
+}
+
+// string to uint8_t buffer
+uint8_t* strToUint(char* str) {
+	LOG_INFO("strlen = %d", strlen(str));
+	for(int i=0; i<strlen(str); i++){
+		uintArray[i] = (uint8_t)str[i];
+	}
+	return uintArray;
+}
+
+// uint8_t buffer to string
+char* uintToStr(uint8_t* buffer) {
+	for(int i=0; i<DISPLAY_ALERT_DATA_LENGTH; i++){
+		charArray[i] = (char)buffer[i];
+	}
+	return charArray;
+}
+
