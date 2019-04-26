@@ -58,6 +58,9 @@
 #include "src/ble_mesh_device_type.h"
 
 /* Variables required for project */
+/* Flash Save Keys */
+uint16 peopleCountFlashKey = 0x4001;
+
 /* People count using IR Sensor */
 int16_t peopleCount = 0;
 uint8_t ir1Value = 0;
@@ -368,7 +371,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 			/* perform a factory reset by erasing PS storage. This removes all the keys and other settings
 			that have been configured for this node */
-			gecko_cmd_flash_ps_erase_all();
+//			gecko_cmd_flash_ps_erase_all();
 			// reboot after a small delay
 			gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FACTORY_RESET, 1);
 		} else {
@@ -477,8 +480,10 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				if(ir2Value) {
 					ir2Value = 0;
 
-					if(peopleCount)
+					if(peopleCount)	{
 						peopleCount--;
+						gecko_cmd_flash_ps_save(peopleCountFlashKey, 2, &peopleCount);
+					}
 
 					if(peopleCount == 0) {
 						// turn off lights locally
@@ -515,6 +520,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				if(ir1Value) {
 					ir1Value = 0;
 					peopleCount++;
+					gecko_cmd_flash_ps_save(peopleCountFlashKey, 2, &peopleCount);
 					gpioLed0SetOn();
 					DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
 					LOG_INFO("People Inside: %d", peopleCount);
@@ -591,6 +597,9 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 
 		if (pData->provisioned) {
 			DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PROVISIONED");
+
+			// restoring people count from flash and displaying it
+			gecko_cmd_flash_ps_load(peopleCountFlashKey);
 			DISPLAY_PRINTF(DISPLAY_ROW_PEOPLE, "People Inside: %d", peopleCount);
 
 			LOG_INFO("node is provisioned. address:%x, ivi:%ld", pData->address, pData->ivi);
