@@ -60,8 +60,15 @@ static uint8 num_connections = 0;
 /* MACROS FOR DATA SENT VIA MODELS */
 #define PB0_STOP_ALERT			(0x01)		// LEVEL model
 #define VIBRATION_ALERT 		(0x0A)		// LEVEL model
+
+#if 0
 #define LIGHT_CONTROL_ON		(0x1B)		// LEVEL model
 #define LIGHT_CONTROL_OFF		(0x2B)		// LEVEL model
+#else
+#define LIGHT_CONTROL_ON		(0x01)		// LEVEL model
+#define LIGHT_CONTROL_OFF		(0x00)		// LEVEL model
+#endif
+
 #define GAS_ALERT				(0x0C)		// LEVEL model
 #define FIRE_ALERT 				(0x0D)		// LEVEL model
 #define NOISE_ALERT 			(0x0E)		// LEVEL model
@@ -74,9 +81,9 @@ static uint8 num_connections = 0;
 
 
 /* Flash IDs for passing in Flash Store/Load functions */
-uint8_t flashData[20];
-uint8_t uintArray[20];
-char charArray[20];
+uint8_t flashData[15];
+
+
 
 #define PEOPLE_COUNT_FLASH_ID			(0x01)
 #define ALERT_STATUS_FLASH_ID			(0x02)
@@ -90,7 +97,7 @@ char charArray[20];
 /* Persistent data lengths */
 #define PEOPLE_COUNT_DATA_LENGTH		(1)
 #define ALERT_STATUS_DATA_LENGTH		(1)
-#define DISPLAY_ALERT_DATA_LENGTH		(20)
+#define DISPLAY_ALERT_DATA_LENGTH		(15)
 
 
 void set_device_name(bd_addr *pAddr);

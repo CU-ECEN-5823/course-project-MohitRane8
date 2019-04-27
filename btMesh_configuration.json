@@ -5,7 +5,7 @@
     "PID": "0xf0b0",
     "VID": "0x1234",
     "CRPL": "0x0020",
-    "Features": "0x000f",
+    "Features": "0x0007",
     "Elements": [
       {
         "Name": "Primary Element",
@@ -19,10 +19,10 @@
           "Generic OnOff Server",
           "0x1001",
           "Generic OnOff Client",
-          "0x1003",
-          "Generic Level Client",
           "0x1002",
-          "Generic Level Server"]
+          "Generic Level Server",
+          "0x1003",
+          "Generic Level Client"]
         ,
         "Vendor Models": [
           ]

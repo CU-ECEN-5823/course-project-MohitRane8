@@ -77,6 +77,8 @@ uint8_t* toggleCountPtr;
 char* displayMessageString;
 uint8_t* displayBuffer;
 
+char* displayString;
+
 /* Relay level from received from one LPN to external signal where it will be published */
 uint8_t relayLevel;
 
@@ -219,7 +221,7 @@ static void level(uint16_t model_id,
 	if(current->level.level == FIRE_ALERT)
 	{
 		DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "FIRE ALERT");
-		DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, "SPRINKLER ON");
+//		DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, "SPRINKLER ON");
 		toggleCount = 0;
 		flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
 		gecko_cmd_hardware_set_soft_timer(3277, FRIEND_ALERT, 0);
@@ -377,6 +379,10 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			LOG_INFO("factory reset");
 			DISPLAY_PRINTF(DISPLAY_ROW_ACTION, ">>>FACTORY RESET<<<");
 
+			/* perform a factory reset by erasing PS storage. This removes all the keys and other settings
+			that have been configured for this node */
+			gecko_cmd_flash_ps_erase_all();
+
 			// reboot after a small delay
 			gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FACTORY_RESET, 1);
 		} else {
@@ -388,6 +394,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			gecko_cmd_mesh_node_init();
 			LOG_INFO("BOOT DONE");
 
+#if 0
 			// loading persistent data - People Count
 			peopleCountPtr = flashLoad(PEOPLE_COUNT_FLASH_ID);
 			peopleCount = *peopleCountPtr;
@@ -400,6 +407,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			displayBuffer = flashLoad(DISPLAY_ALERT_FLASH_ID);
 			displayMessageString = uintToStr(displayBuffer);
 			LOG_INFO("displayMessageString = %s", displayMessageString);
+#endif
 		}
       break;
 
@@ -451,7 +459,8 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 						flashStore(ALERT_STATUS_FLASH_ID, &toggleCount);
 						gecko_cmd_hardware_set_soft_timer(0, FRIEND_ALERT, 0);
 						DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, " ");
-						DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, " ");
+						displayString = "               ";
+						flashStore(DISPLAY_ALERT_FLASH_ID, strToUint(displayString));
 					}
 				}
 				break;
@@ -479,10 +488,17 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			LOG_INFO("PB0 INT");
 
 			// publish Alert Stop
+#if 1
 			req.kind = mesh_generic_request_level;
 			req.level = PB0_STOP_ALERT;
 			trid++;
 			resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+#else
+			req.kind = mesh_lighting_request_lightness_actual;
+			req.lightness = PB0_STOP_ALERT;
+			trid++;
+			resp = mesh_lib_generic_client_publish(MESH_LIGHTING_LIGHTNESS_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+#endif
 			if (resp) {
 				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 			} else {
@@ -521,10 +537,17 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 						gpioLed0SetOff();
 
 						// publish lights off data when no person is in cave
+#if 0
 						req.kind = mesh_generic_request_level;
 						req.level = LIGHT_CONTROL_OFF;
 						trid++;
 						resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+#else
+						req.kind = mesh_generic_request_on_off;
+						req.level = LIGHT_CONTROL_OFF;
+						trid++;
+						resp = mesh_lib_generic_client_publish(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+#endif
 						if (resp) {
 							LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 						} else {
@@ -570,10 +593,17 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 					// publish lights on data when there is someone in cave
 					if(peopleCount == 1)
 					{
+#if 0
 						req.kind = mesh_generic_request_level;
 						req.level = LIGHT_CONTROL_ON;
 						trid++;
 						resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+#else
+						req.kind = mesh_generic_request_on_off;
+						req.level = LIGHT_CONTROL_ON;
+						trid++;
+						resp = mesh_lib_generic_client_publish(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+#endif
 						if (resp) {
 							LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 						} else {
@@ -592,12 +622,12 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				vibActivationFlag = 0;
 
 				DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "EARTHQUAKE");
-				DISPLAY_PRINTF(DISPLAY_ROW_ACTUATOR, " ");
 
+#if 0
 				// store alert display message in persistent memory
-				char* str = "EARTHQUAKE";
-				uint8_t* buffer = strToUint(str);
-				flashStore(DISPLAY_ALERT_FLASH_ID, buffer);
+				displayString = "EARTHQUAKE";
+				flashStore(DISPLAY_ALERT_FLASH_ID, strToUint(displayString));
+#endif
 
 				// Timeout of 1 sec
 				gecko_cmd_hardware_set_soft_timer(1 * 32768, VIB_TIMEOUT_FLAG, 1);
@@ -609,10 +639,17 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				LOG_INFO("VIB INT");
 
 				// Publication of alert
+#if 1
 				req.kind = mesh_generic_request_level;
 				req.level = VIBRATION_ALERT;
 				trid++;
 				resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+#else
+				req.kind = mesh_lighting_request_lightness_actual;
+				req.lightness = VIBRATION_ALERT;
+				trid++;
+				resp = mesh_lib_generic_client_publish(MESH_LIGHTING_LIGHTNESS_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
+#endif
 				if (resp) {
 					LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 				} else {
@@ -848,6 +885,7 @@ void flashStore(uint8_t flashID, uint8_t *dataPtr) {
 
 // string to uint8_t buffer
 uint8_t* strToUint(char* str) {
+	uint8_t uintArray[strlen(str)];
 	LOG_INFO("strlen = %d", strlen(str));
 	for(int i=0; i<strlen(str); i++){
 		uintArray[i] = (uint8_t)str[i];
@@ -857,6 +895,8 @@ uint8_t* strToUint(char* str) {
 
 // uint8_t buffer to string
 char* uintToStr(uint8_t* buffer) {
+//	LOG_INFO("SIZEOF = %d", sizeof(buffer));
+	char charArray[15];
 	for(int i=0; i<DISPLAY_ALERT_DATA_LENGTH; i++){
 		charArray[i] = (char)buffer[i];
 	}

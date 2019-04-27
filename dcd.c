@@ -29,7 +29,7 @@ const uint8_t __mesh_dcd[] = {
     0xb0, 0xf0, /* Product ID = 0xf0b0 */
     0x34, 0x12, /* Version Number = 0x1234 */
     0x20, 0x00, /* Capacity of Replay Protection List = 0x0020 */
-    0x0f, 0x00, /* Features Bitmask = 0x000f */
+    0x07, 0x00, /* Features Bitmask = 0x0007 */
     /* Begin Primary Element */
         0x00, 0x00, /* Location = 0x0000 */
         0x05, /* Number of SIG Models = 0x05 */
@@ -38,8 +38,8 @@ const uint8_t __mesh_dcd[] = {
         0x00, 0x00, /* Configuration Server */
         0x00, 0x10, /* Generic OnOff Server */
         0x01, 0x10, /* Generic OnOff Client */
-        0x03, 0x10, /* Generic Level Client */
         0x02, 0x10, /* Generic Level Server */
+        0x03, 0x10, /* Generic Level Client */
         /* End SIG Models */
         /* Begin Vendor Models */
         /* End Vendor Models */
