@@ -272,7 +272,7 @@ void lpn_init(void)
 	// Initialize LPN functionality.
 	res = gecko_cmd_mesh_lpn_init()->result;
 	if (res) {
-		LOG_INFO("LPN init failed (0x%x)", res);
+		LOG_ERROR("LPN init failed (0x%x)", res);
 		return;
 	}
 
@@ -281,7 +281,7 @@ void lpn_init(void)
 	// - Poll timeout = 1 seconds
 	res = gecko_cmd_mesh_lpn_configure(2, 1 * 1000)->result;
 	if (res) {
-		LOG_INFO("LPN conf failed (0x%x)", res);
+		LOG_ERROR("LPN conf failed (0x%x)", res);
 		return;
 	}
 
@@ -289,7 +289,7 @@ void lpn_init(void)
 	res = gecko_cmd_mesh_lpn_establish_friendship(0)->result;
 
 	if (res != 0) {
-		LOG_INFO("ret.code %x", res);
+		LOG_ERROR("ret.code %x", res);
 	}
 }
 
@@ -347,7 +347,7 @@ void gecko_main_init()
 void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 {
   switch (evt_id) {
-  	// boot id
+  	// boot event
     case gecko_evt_system_boot_id:
     	// check pushbutton state at startup. If either PB0 or PB1 is held down then do factory reset
 		if (GPIO_PinInGet(PB0_PORT, PB0_PIN) == 0 || GPIO_PinInGet(PB1_PORT, PB1_PIN) == 0) {
@@ -359,7 +359,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			gecko_cmd_flash_ps_erase_all();
 
 			// reboot after a small delay - 1 second
-			gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FACTORY_RESET, 1);
+			gecko_cmd_hardware_set_soft_timer(2 * ONE_SEC_TICKS_CNT, TIMER_ID_FACTORY_RESET, 1);
 		} else {
 			struct gecko_msg_system_get_bt_address_rsp_t *pAddr = gecko_cmd_system_get_bt_address();
 			set_device_name(&pAddr->address);
@@ -387,7 +387,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		}
 		break;
 
-	// node initialized
+	// node initialized event
     case gecko_evt_mesh_node_initialized_id:
 		LOG_INFO("node initialized");
 
@@ -420,7 +420,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			uint16 res;
 			res = gecko_cmd_mesh_friend_init()->result;
 			if (res) {
-				LOG_INFO("Friend init failed 0x%x", res);
+				LOG_ERROR("Friend init failed 0x%x", res);
 			}
 
 			// enable gpio interrupts
@@ -435,13 +435,13 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		}
 		break;
 
-	// provisioning started
+	// provisioning started event
 	case gecko_evt_mesh_node_provisioning_started_id:
 		LOG_INFO("Started provisioning");
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PROVISIONING");
 		break;
 
-	// provisioned failed
+	// provisioned failed event
 	case gecko_evt_mesh_node_provisioned_id:
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PROVISIONED");
 		LOG_INFO("node is provisioned. address:%x, ivi:%ld", pData->address, pData->ivi);
@@ -456,19 +456,19 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		uint16 res;
 		res = gecko_cmd_mesh_friend_init()->result;
 		if (res) {
-			LOG_INFO("Friend init failed 0x%x", res);
+			LOG_ERROR("Friend init failed 0x%x", res);
 		}
 
 		// enable gpio interrupts
 		gpioIntEnable();
 		break;
 
-	// provisioning failed
+	// provisioning failed event
 	case gecko_evt_mesh_node_provisioning_failed_id:
-		LOG_INFO("provisioning failed, code %x", evt->data.evt_mesh_node_provisioning_failed.result);
+		LOG_ERROR("provisioning failed, code %x", evt->data.evt_mesh_node_provisioning_failed.result);
 		DISPLAY_PRINTF(DISPLAY_ROW_ACTION, "PROVISION FAILED");
 		/* start a one-shot timer that will trigger soft reset after small delay */
-		gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_RESTART, 1);
+		gecko_cmd_hardware_set_soft_timer(2 * ONE_SEC_TICKS_CNT, TIMER_ID_RESTART, 1);
 		break;
 
 	// hardware soft timer event
@@ -565,7 +565,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			trid++;
 			resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 			if (resp) {
-				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
+				LOG_ERROR("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 			} else {
 				LOG_INFO("request sent, trid = %u", trid);
 			}
@@ -576,8 +576,9 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			if(ir1ActivationFlag)
 			{
 				ir1ActivationFlag = 0;
+				gecko_cmd_hardware_set_soft_timer(1 * ONE_SEC_TICKS_CNT, IR1_TIMEOUT_FLAG, 1);
+
 				LOG_INFO("IR1 INT");
-				gecko_cmd_hardware_set_soft_timer(1 * 32768, IR1_TIMEOUT_FLAG, 1);
 
 				if(ir2Value) {
 					// person exiting cave
@@ -620,8 +621,9 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			if(ir2ActivationFlag)
 			{
 				ir2ActivationFlag = 0;
+				gecko_cmd_hardware_set_soft_timer(1 * ONE_SEC_TICKS_CNT, IR2_TIMEOUT_FLAG, 1);
+
 				LOG_INFO("IR2 INT");
-				gecko_cmd_hardware_set_soft_timer(1 * 32768, IR2_TIMEOUT_FLAG, 1);
 
 				if(ir1Value) {
 					// person entering cave
@@ -647,7 +649,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 						trid++;
 						resp = mesh_lib_generic_client_publish(MESH_GENERIC_ON_OFF_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 						if (resp) {
-							LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
+							LOG_ERROR("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 						} else {
 							LOG_INFO("request sent, trid = %u", trid);
 						}
@@ -663,8 +665,8 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 		if(((evt->data.evt_system_external_signal.extsignals) & VIB_FLAG) != 0) {
 			if(vibActivationFlag) {
 				vibActivationFlag = 0;
-				// Timeout of 1 sec
-				gecko_cmd_hardware_set_soft_timer(1 * 32768, VIB_TIMEOUT_FLAG, 1);
+				// Timeout of 5 sec
+				gecko_cmd_hardware_set_soft_timer(5 * ONE_SEC_TICKS_CNT, VIB_TIMEOUT_FLAG, 1);
 
 				DISPLAY_PRINTF(DISPLAY_ROW_SENSOR, "  EARTHQUAKE  ");
 
@@ -686,7 +688,7 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 				trid++;
 				resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 				if (resp) {
-					LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
+					LOG_ERROR("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 				} else {
 					LOG_INFO("request sent, trid = %u", trid);
 				}
@@ -701,21 +703,21 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
 			trid++;
 			resp = mesh_lib_generic_client_publish(MESH_GENERIC_LEVEL_CLIENT_MODEL_ID, _elem_index, trid, &req, 0, 0, 0);
 			if (resp) {
-				LOG_INFO("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
+				LOG_ERROR("gecko_cmd_mesh_generic_client_publish failed,code %x", resp);
 			} else {
 				LOG_INFO("request sent, trid = %u", trid);
 			}
 		}
 		break;
 
-	// conneciton open
+	// connection open event
 	case gecko_evt_le_connection_opened_id:
 		LOG_INFO("evt:gecko_evt_le_connection_opened_id");
 		num_connections++;
 		DISPLAY_PRINTF(DISPLAY_ROW_CONNECTION, "Connected");
 		break;
 
-	// connection close
+	// connection close event
     case gecko_evt_le_connection_closed_id:
     	LOG_INFO("evt:gecko_evt_le_connection_closed_id");
 
@@ -749,9 +751,9 @@ void handle_gecko_event(uint32_t evt_id, struct gecko_cmd_packet *evt)
     	break;
 #endif
 
-    // node reset
+    // node reset event
     case gecko_evt_mesh_node_reset_id:
-    	gecko_cmd_hardware_set_soft_timer(2 * 32768, TIMER_ID_FACTORY_RESET, 1);
+    	gecko_cmd_hardware_set_soft_timer(2 * ONE_SEC_TICKS_CNT, TIMER_ID_FACTORY_RESET, 1);
     	break;
 
     // server status update received
@@ -804,7 +806,7 @@ uint8_t* flashLoad(uint8_t flashID) {
 
 	resp = flashResponse->result;
 	if(resp) {
-		LOG_INFO("flash load failed,code %x", resp);
+		LOG_ERROR("flash load failed,code %x", resp);
 	} else {
 		LOG_INFO("flash load success");
 	}
@@ -841,7 +843,7 @@ void flashStore(uint8_t flashID, uint8_t *dataPtr) {
 	}
 
 	if (resp) {
-		LOG_INFO("flash store failed,code %x", resp);
+		LOG_ERROR("flash store failed,code %x", resp);
 	} else {
 		LOG_INFO("flash store success");
 	}

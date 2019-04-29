@@ -38,9 +38,7 @@ static uint16 _elem_index = 0x00;
 /// number of active Bluetooth connections
 static uint8 num_connections = 0;
 
-#if 0
 #define ONE_SEC_TICKS_CNT				(32768)
-#endif
 
 /* Hardware soft timer handles */
 #define TIMER_ID_FACTORY_RESET 			(0x01)
