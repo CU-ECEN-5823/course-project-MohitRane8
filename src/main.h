@@ -38,66 +38,59 @@ static uint16 _elem_index = 0x00;
 /// number of active Bluetooth connections
 static uint8 num_connections = 0;
 
+#if 0
+#define ONE_SEC_TICKS_CNT				(32768)
+#endif
+
 /* Hardware soft timer handles */
-#define TIMER_ID_FACTORY_RESET 	(0x01)
-#define TIMER_ID_RESTART 		(0x02)
-#define DISPLAY_UPDATE 			(0x04)
-#define LOG_TIME_UPDATE 		(0x08)
-#define TIMER_ID_FRIEND_FIND 	(0x10)
-#define IR1_TIMEOUT_FLAG 		(0x20)
-#define IR2_TIMEOUT_FLAG 		(0x40)
-#define VIB_TIMEOUT_FLAG 		(0x80)
-#define FRIEND_ALERT			(0x81)
+#define TIMER_ID_FACTORY_RESET 			(0x01)
+#define TIMER_ID_RESTART 				(0x02)
+#define DISPLAY_UPDATE 					(0x04)
+#define LOG_TIME_UPDATE 				(0x08)
+#define TIMER_ID_FRIEND_FIND 			(0x10)
+#define IR1_TIMEOUT_FLAG 				(0x20)
+#define IR2_TIMEOUT_FLAG 				(0x40)
+#define VIB_TIMEOUT_FLAG 				(0x80)
+#define FRIEND_ALERT					(0x81)
 
 /* External signal flags */
-#define PB0_FLAG 				(0x01)
-#define PB1_FLAG 				(0x02)
-#define IR1_FLAG 				(0x04)
-#define IR2_FLAG 				(0x08)
-#define VIB_FLAG 				(0x10)
-#define RELAY_FLAG				(0x20)
+#define PB0_FLAG 						(0x01)
+#define PB1_FLAG 						(0x02)
+#define IR1_FLAG 						(0x04)
+#define IR2_FLAG 						(0x08)
+#define VIB_FLAG 						(0x10)
+#define RELAY_FLAG						(0x20)
 
 /* MACROS FOR DATA SENT VIA MODELS */
-#define PB0_STOP_ALERT			(0x01)		// LEVEL model
-#define VIBRATION_ALERT 		(0x0A)		// LEVEL model
+#define PB0_STOP_ALERT					(0x01)		// LEVEL model
+#define VIBRATION_ALERT 				(0x0A)		// LEVEL model
+#define LIGHT_CONTROL_ON				(0x01)		// ON OFF model
+#define LIGHT_CONTROL_OFF				(0x00)		// ON OFF model
 
-#if 0
-#define LIGHT_CONTROL_ON		(0x1B)		// LEVEL model
-#define LIGHT_CONTROL_OFF		(0x2B)		// LEVEL model
-#else
-#define LIGHT_CONTROL_ON		(0x01)		// LEVEL model
-#define LIGHT_CONTROL_OFF		(0x00)		// LEVEL model
-#endif
-
-#define GAS_ALERT				(0x0C)		// LEVEL model
-#define FIRE_ALERT 				(0x0D)		// LEVEL model
-#define NOISE_ALERT 			(0x0E)		// LEVEL model
-#define HUMIDITY_ALERT 			(0x0F)		// LEVEL model
-
-#if 0
-#define PB0_STOP_ALERT			(0x01)		// ON_OFF model
-#define GAS_ALERT				(0x00)		// ON_OFF model
-#endif
+/* MACROS FOR DATA RECEIVED FROM LPN */
+#define GAS_ALERT						(0x0C)		// LEVEL model
+#define FIRE_ALERT 						(0x0D)		// LEVEL model
+#define NOISE_ALERT 					(0x0E)		// LEVEL model
+#define HUMIDITY_ALERT 					(0x0F)		// LEVEL model
 
 
-/* Flash IDs for passing in Flash Store/Load functions */
-uint8_t flashData[15];
-
-
-
+/* Flash IDs for Flash Store and Load functions */
 #define PEOPLE_COUNT_FLASH_ID			(0x01)
 #define ALERT_STATUS_FLASH_ID			(0x02)
 #define DISPLAY_ALERT_FLASH_ID			(0x03)
+#define LIGHTS_STATUS_FLASH_ID			(0x04)
 
 /* Flash Save Keys */
 #define PEOPLE_COUNT_FLASH_ADDRESS 		(0x4000)
 #define ALERT_STATUS_FLASH_ADDRESS		(0x4001)
 #define DISPLAY_ALERT_FLASH_ADDRESS		(0x4002)
+#define LIGHTS_STATUS_FLASH_ADDRESS		(0x4003)
 
 /* Persistent data lengths */
 #define PEOPLE_COUNT_DATA_LENGTH		(1)
 #define ALERT_STATUS_DATA_LENGTH		(1)
 #define DISPLAY_ALERT_DATA_LENGTH		(15)
+#define LIGHTS_STATUS_DATA_LENGTH		(1)
 
 
 void set_device_name(bd_addr *pAddr);
@@ -122,6 +115,7 @@ static void level(uint16_t model_id,
 					uint32_t remaining_ms,
 					uint8_t response_flags);
 
+// Persistent data functions declarations
 uint8_t* flashLoad(uint8_t flashID);
 void flashStore(uint8_t flashID, uint8_t *dataPtr);
 

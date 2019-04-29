@@ -14,8 +14,6 @@
 #define LED1_port gpioPortF
 #define LED1_pin 5
 
-CORE_DECLARE_IRQ_STATE;
-
 void gpioInit()
 {
 	/* LED configuration */
@@ -58,7 +56,6 @@ void gpioIntEnable()
 
 void GPIO_EVEN_IRQHandler(void)
 {
-	CORE_ENTER_CRITICAL();
 	uint32_t reason = GPIO_IntGet();
 
 	/* Clearing all interrupts */
@@ -76,12 +73,10 @@ void GPIO_EVEN_IRQHandler(void)
 	// VIBRATION pin 12, so 13th bit set
 	if(reason & 0x1000)
 		gecko_external_signal(VIB_FLAG);
-	CORE_EXIT_CRITICAL();
 }
 
 void GPIO_ODD_IRQHandler(void)
 {
-	CORE_ENTER_CRITICAL();
 	uint32_t reason = GPIO_IntGet();
 
 	/* Clearing all interrupts */
@@ -90,7 +85,6 @@ void GPIO_ODD_IRQHandler(void)
 	// IR2 pin 11, so 12th bit set
 	if(reason & 0x800)
 		gecko_external_signal(IR2_FLAG);
-	CORE_EXIT_CRITICAL();
 }
 
 void gpioLed0SetOn()
